@@ -1,0 +1,27 @@
+**sync-conflict**
+
+exp_local
+__pycache__
+*.pyc
+data
+.DS_Store
+
+
+# vim
+*.swp
+*.swo
+*.swn
+
+# jupyter notebook
+notebooks
+.ipynb_checkpoints
+*.ipynb
+wandb
+exp
+.DS_Store
+
+# conda env
+bin/
+etc/
+lib/
+share/

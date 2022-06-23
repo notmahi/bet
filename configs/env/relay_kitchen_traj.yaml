@@ -1,0 +1,17 @@
+name: kitchen-all-v0
+args: []
+kwargs: {}
+obs_dim: 60
+action_dim: 9
+action_min: null
+action_max: null
+
+load_dir: "/absolute/path/to/training_run/directory"
+
+workspace:
+  _target_: workspaces.adept_kitchen.AdeptKitchenWorkspace
+
+dataset_fn:
+  _target_: dataloaders.trajectory_loader.get_relay_kitchen_train_val
+  data_directory: ${env_vars.datasets.relay_kitchen}
+  window_size: ${window_size}

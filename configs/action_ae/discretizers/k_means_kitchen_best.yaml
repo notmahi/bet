@@ -1,0 +1,5 @@
+_target_: models.action_ae.discretizers.k_means.KMeansDiscretizer
+num_bins: 64
+action_dim: ${env.action_dim}
+device: ${device}
+predict_offsets: True

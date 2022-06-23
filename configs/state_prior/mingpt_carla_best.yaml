@@ -1,0 +1,20 @@
+_target_: models.latent_generators.mingpt.MinGPT
+
+discrete_input: false
+input_dim: ${encoder.output_dim}
+
+vocab_size: ???  # TBD by the discretization model.
+
+# Architecture details
+n_layer: 3
+n_head: 4
+n_embd: 256
+attn_pdrop: 0.6
+resid_pdrop: 0.6
+embd_pdrop: 0.6
+
+block_size: ${window_size}  # Length of history/context
+predict_offsets: True
+offset_loss_scale: 500.0
+focal_loss_gamma: 2.0
+action_dim: ${env.action_dim}
