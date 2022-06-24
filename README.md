@@ -1,6 +1,6 @@
 # Behavior Transformers: Cloning k modes with one stone
 
-[[Arxiv]](https://arxiv.org/abs/2206.11251) [[Code]](https://github.com/notmahi/bet) [[Data]](https://osf.io/983qz/) [[Videos]](https://mahis.life/bet/)
+[[Arxiv]](https://arxiv.org/abs/2206.11251) [[Code]](https://github.com/notmahi/bet) [[Data]](https://osf.io/983qz/) [[Project page and videos]](https://mahis.life/bet/)
 
 Created by [Nur Muhammad (Mahi) Shafiullah](https://mahis.life), [Zichen Jeff Cui](https://jeffcui.com/), [Ariuntuya (Arty) Altanzaya](https://www.artys.page/), and [Lerrel Pinto](https://www.lerrelpinto.com/) at New York University.
 
