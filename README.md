@@ -95,6 +95,7 @@ See below for detailed steps for each environment.
   (Evaluation requires including the relay policy learning repo in `PYTHONPATH`.)
 
 ### Block push
+Update (11/17/22): There was a small error in the published hyperparameters for Block push (namely `window_size` and `batch_size`). We have updated the hyperparameters in the config files to the parameters that replicate the results in the paper. We apologize for any inconvenience.
 - Train:
   ```
   python3 train.py --config-name=train_blockpush

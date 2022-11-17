@@ -10,9 +10,9 @@ lazy_init_models: True
 
 # Dataset details
 train_fraction: 0.95
-batch_size: 64
+batch_size: 256
 num_workers: 32
-window_size: 10
+window_size: 5
 
 # Training details
 num_training_epochs: 1
