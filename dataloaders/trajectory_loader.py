@@ -20,7 +20,7 @@ from tqdm import tqdm
 
 class RelayKitchenTrajectoryDataset(TensorDataset):
     def __init__(self, data_directory, device="cpu"):
-        data_directory = Path(data_directory)
+        data_directory = Path(__file__).parent.parent.resolve() / Path(data_directory)
         observations = np.load(data_directory / "observations_seq.npy")
         actions = np.load(data_directory / "actions_seq.npy")
         masks = np.load(data_directory / "existence_mask.npy")
