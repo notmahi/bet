@@ -58,7 +58,7 @@ class CarlaMultipathTrajectoryDataset(Dataset):
     ):
         assert 0.0 < subset_fraction <= 1.0, "subset_fraction must be in (0, 1]"
         self.device = device
-        self.data_directory = Path(data_directory)
+        self.data_directory = Path(__file__).parent.parent.resolve() / Path(data_directory)
         print("CARLA loading: started")
         self.seq_lengths_all = torch.load(self.data_directory / "seq_lengths.pth")
         self.observations_all = torch.load(self.data_directory / "all_observations.pth")
@@ -116,7 +116,7 @@ class CarlaMultipathStateTrajectoryDataset(Dataset):
     ):
         assert 0.0 < subset_fraction <= 1.0, "subset_fraction must be in (0, 1]"
         self.device = device
-        self.data_directory = Path(data_directory)
+        self.data_directory = Path(__file__).parent.parent.resolve() / Path(data_directory)
         self.seq_lengths_all = torch.load(self.data_directory / "seq_lengths.pth")
         self.observations_all = torch.load(
             self.data_directory / "all_observations.pth"
@@ -177,7 +177,7 @@ class PushTrajectoryDataset(TensorDataset):
         device="cpu",
     ):
         self.device = device
-        self.data_directory = Path(data_directory)
+        self.data_directory = Path(__file__).parent.parent.resolve() / Path(data_directory)
         logging.info("Multimodal loading: started")
         self.observations = np.load(
             self.data_directory / "multimodal_push_observations.npy"
