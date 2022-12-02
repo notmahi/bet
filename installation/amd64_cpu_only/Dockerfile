@@ -18,8 +18,6 @@ FROM condaforge/miniforge3:22.9.0-2
 #    && apt-get clean \
 #    && rm -rf /var/lib/apt/lists/*
 
-RUN conda update pip
-
 ARG USER
 ARG UID
 RUN useradd -u $UID --create-home $USER

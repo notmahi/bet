@@ -1,0 +1,12 @@
+# Essential packages.
+git
+libjemalloc2
+openssh-server
+sudo
+tzdata
+zsh
+
+# Utilitiy packages.
+curl
+nano
+tmux
