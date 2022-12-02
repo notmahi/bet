@@ -48,16 +48,80 @@ The contents of the `data` folder should look like this:
 * `data/bet_data_release`: contains the datasets released by the paper authors.
 
 ### Environment
-We provide several installation methods to meet different needs.
-1. **CUDA:** to leverage  Nvidia GPUs. Uses Docker.
-2. **CPU:** Should work on any machine. Uses Docker.
-3. **MPS:** to leverage the M1 GPU. Uses Conda (Pytorch does not support MPS on Docker yet).
 
-#### Cuda
+We provide installation methods to meet different systems.
+The methods aim to insure easiness of use, portability, and reproducibility thanks to Docker.
+It is hard to cover all systems, so we focused on the main ones.
 
-#### CPU
+1. **amd64 with CUDA:** for machines with Nvidia GPUs with Intel CPUs.
+2. **amd 64 CPU-only:** for machines with Intel CPUs.
+3. **arm64 with MPS:** to leverage the M1 GPU of Apple machines.
+
+#### amd64 (CUDA and CPU-only)
+
+This installation method is adapted from the [Cresset initiative](https://github.com/cresset-template/cresset).
+Refer to the Cresset repository for more details.
+
+Steps prefixed with [CUDA] are only required for the CUDA option.
+
+**Prerequisites:**
+
+* [`make`](https://cmake.org/install/).
+* [`docker`](https://docs.docker.com/get-docker/).
+* [`docker compose`](https://docs.docker.com/compose/install/)
+* [CUDA] [Nvidia CUDA Driver](https://www.nvidia.com/download/index.aspx) (Only the driver. No CUDA toolkit, etc)
+* [CUDA] [`nvidia-docker`](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#docker)
+
+**Installation**
+
+```bash
+cd installation/amd64
+```
+
+In `Makefile`, change `SERVICE` to `cuda` or `cpu`.
+SERVICE = train
+```bash
+make env
+```
+
+A `.env` file will be created in the installation directory. You need to edit it according to the following needs:
+
+[CUDA] If you are using an old Nvidia GPU (i.e. [capability](https://developer.nvidia.com/cuda-gpus#compute)) < 3.7) you
+need to compile PyTorch from source.
+Find the compute capability for your GPU and edit it below.
+
+```bash
+BUILD_MODE=include               # Whether to build PyTorch from source.
+CCA=3.5                          # Compute capability.
+```
+
+If your Nvidia drivers are also old you may need to change the CUDA Toolkit version.
+See
+the [compatibility matrix](https://docs.nvidia.com/cuda/cuda-toolkit-release-notes/index.html#cuda-major-component-versions__table-cuda-toolkit-driver-versions)
+for compatible versions of the CUDA driver and CUDA Toolkit
+
+```bash
+CUDA_VERSION=11.3.1                # Must be compatible with hardware and CUDA driver.
+CUDNN_VERSION=8                    # Only major version specifications are available.
+```
 
 #### MPS
+
+As the MPS backend isn't supported on PyTorch on Docker, this methods relies on a local installation of `conda`, thus
+unfortunately limiting portability and reproducibility.
+We provide an `environment.yml` file adapted from the BeT's author's repo to be compatible with the M1 system.
+
+**Prerequisites:**
+* `conda`: which we recommend installing with [miniforge](https://github.com/conda-forge/miniforge).
+
+**Installation**
+```bash
+conda env create --file=installation/arm64/environment.yml
+conda activate behavior-transformer
+```
+
+
+### Logging
 
 
 ## Reproducing The Figures

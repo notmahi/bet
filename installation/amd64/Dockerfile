@@ -410,9 +410,6 @@ ARG PYTHONDONTWRITEBYTECODE=1
 ARG PYTHONUNBUFFERED=1
 ARG DEB_OLD
 ARG DEB_NEW
-ENV TZ=Asia/Seoul
-RUN ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime && echo ${TZ} > /etc/timezone
-# `tzdata` requires noninteractive mode.
 ARG DEBIAN_FRONTEND=noninteractive
 # Install `software-properties-common`, a requirement for the `add-apt-repository` command.
 RUN if [ ${DEB_NEW} ]; then sed -i "s%${DEB_OLD}%${DEB_NEW}%g" /etc/apt/sources.list; fi && \

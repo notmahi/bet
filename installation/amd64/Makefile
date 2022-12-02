@@ -5,7 +5,7 @@
 # https://docs.docker.com/engine/reference/commandline/compose
 
 # **Change `SERVICE` to specify other services and projects.**
-SERVICE = train
+SERVICE = cuda
 COMMAND = /bin/zsh
 
 # `PROJECT` is equivalent to `COMPOSE_PROJECT_NAME`.
