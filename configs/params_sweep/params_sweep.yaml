@@ -1,0 +1,10 @@
+# @package _global_
+hydra:
+  mode: MULTIRUN
+  sweeper:
+    params:
+      seed: range(2)
+      lr: 1e-4,1e-3
+      weight_decay: 0.1,0.2
+
+        

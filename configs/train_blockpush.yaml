@@ -5,6 +5,7 @@ defaults:
   - env: block_pushing_multimodal_fixed_target 
   - state_prior: mingpt_blockpush_best
   - env_vars: env_vars
+  - params_sweep: params_sweep
 
 lazy_init_models: True
 
@@ -17,7 +18,7 @@ window_size: 5
 # Training details
 num_training_epochs: 1
 data_parallel: True
-device: cuda
+device: cpu
 optim: Adam
 save_latents: False
 
@@ -44,9 +45,11 @@ experiment: blockpush_train
 
 hydra:
   job:
-    override_dirname: ${experiment}
+    chdir: True   
   run:
-    dir: ./exp_local/${now:%Y.%m.%d}/${now:%H%M%S}_${experiment}
+    dir: ./exp_local/${experiment}/${now:%Y.%m.%d-%H.%M.%S}
   sweep:
-    dir: ./exp/${now:%Y.%m.%d}/${now:%H%M}_${experiment}
-    subdir: ${hydra.job.num}
+    dir: ./exp/${experiment}/${now:%Y.%m.%d-%H.%M}
+    subdir: ${get_only_swept_params:}/seed=${seed}
+    # subdir: ${hydra.sweeper.params}/seed=${seed}
+    # subdir: ${hydra.job.override_dirname}/seed=${seed}
