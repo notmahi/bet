@@ -24,12 +24,12 @@ class Workspace:
         self.work_dir = Path.cwd()
         print("Saving to {}".format(self.work_dir))
         self.cfg = cfg
-        self.device = torch.device(cfg.device)
-        utils.set_seed_everywhere(cfg.seed)
+        self.device = torch.device(cfg.experiment.device)
+        utils.set_seed_everywhere(cfg.experiment.seed)
         self.dataset = hydra.utils.call(
-            cfg.env.dataset_fn,
-            train_fraction=cfg.train_fraction,
-            random_seed=cfg.seed,
+            cfg.env.dataset,
+            train_fraction=cfg.experiment.train_fraction,
+            random_seed=cfg.experiment.seed,
             device=self.device,
         )
         self.train_set, self.test_set = self.dataset
@@ -39,7 +39,7 @@ class Workspace:
         self.action_ae = None
         self.obs_encoding_net = None
         self.state_prior = None
-        if not self.cfg.lazy_init_models:
+        if not self.cfg.experiment.lazy_init_models:
             self._init_action_ae()
             self._init_obs_encoding_net()
             self._init_state_prior()
@@ -61,58 +61,59 @@ class Workspace:
 
     def _init_action_ae(self):
         if self.action_ae is None:  # possibly already initialized from snapshot
-            self.action_ae = hydra.utils.instantiate(self.cfg.action_ae,
-                                                     _recursive_=False).to(
-                                                         self.device)
-            if self.cfg.data_parallel:
+            self.action_ae = hydra.utils.instantiate(
+                self.cfg.action_interface.action_ae.discretizer,
+                _recursive_=False).to(self.device)
+            if self.cfg.experiment.data_parallel:
                 self.action_ae = GeneratorDataParallel(self.action_ae)
 
     def _init_obs_encoding_net(self):
         if self.obs_encoding_net is None:  # possibly already initialized from snapshot
-            self.obs_encoding_net = hydra.utils.instantiate(self.cfg.encoder)
+            self.obs_encoding_net = hydra.utils.instantiate(
+                self.cfg.action_interface.encoder)
             self.obs_encoding_net = self.obs_encoding_net.to(self.device)
-            if self.cfg.data_parallel:
+            if self.cfg.experiment.data_parallel:
                 self.obs_encoding_net = torch.nn.DataParallel(
                     self.obs_encoding_net)
 
     def _init_state_prior(self):
         if self.state_prior is None:  # possibly already initialized from snapshot
             self.state_prior = hydra.utils.instantiate(
-                self.cfg.state_prior,
+                self.cfg.model,
                 latent_dim=self.action_ae.latent_dim,
                 vocab_size=self.action_ae.num_latents,
             ).to(self.device)
-            if self.cfg.data_parallel:
+            if self.cfg.experiment.data_parallel:
                 self.state_prior = LatentGeneratorDataParallel(
                     self.state_prior)
             self.state_prior_optimizer = self.state_prior.get_optimizer(
-                learning_rate=self.cfg.lr,
-                weight_decay=self.cfg.weight_decay,
-                betas=tuple(self.cfg.betas),
+                learning_rate=self.cfg.experiment.lr,
+                weight_decay=self.cfg.experiment.weight_decay,
+                betas=tuple(self.cfg.experiment.betas),
             )
 
     def _setup_loaders(self):
         self.train_loader = DataLoader(
             self.train_set,
-            batch_size=self.cfg.batch_size,
+            batch_size=self.cfg.experiment.batch_size,
             shuffle=True,
-            num_workers=self.cfg.num_workers,
+            num_workers=self.cfg.experiment.num_workers,
             pin_memory=True,
         )
 
         self.test_loader = DataLoader(
             self.test_set,
-            batch_size=self.cfg.batch_size,
+            batch_size=self.cfg.experiment.batch_size,
             shuffle=False,
-            num_workers=self.cfg.num_workers,
+            num_workers=self.cfg.experiment.num_workers,
             pin_memory=True,
         )
 
         self.latent_collection_loader = DataLoader(
             self.train_set,
-            batch_size=self.cfg.batch_size,
+            batch_size=self.cfg.experiment.batch_size,
             shuffle=False,
-            num_workers=self.cfg.num_workers,
+            num_workers=self.cfg.experiment.num_workers,
             pin_memory=True,
         )
 
@@ -133,8 +134,9 @@ class Workspace:
                     return_loss_components=True,
                 )
                 loss.backward()
-                torch.nn.utils.clip_grad_norm_(self.state_prior.parameters(),
-                                               self.cfg.grad_norm_clip)
+                torch.nn.utils.clip_grad_norm_(
+                    self.state_prior.parameters(),
+                    self.cfg.experiment.grad_norm_clip)
                 self.state_prior_optimizer.step()
                 self.log_append("prior_train", len(observations),
                                 loss_components)
@@ -162,7 +164,7 @@ class Workspace:
             print(f"Resuming: {snapshot}")
             self.load_snapshot()
 
-        if self.cfg.lazy_init_models:
+        if self.cfg.experiment.lazy_init_models:
             self._init_obs_encoding_net()
             self._init_action_ae()
         self.action_ae.fit_model(
@@ -170,31 +172,34 @@ class Workspace:
             self.test_loader,
             self.obs_encoding_net,
         )
-        if self.cfg.save_latents:
+        if self.cfg.experiment.save_latents:
             self.save_latents()
 
         # Train the action prior model.
-        if self.cfg.lazy_init_models:
+        if self.cfg.experiment.lazy_init_models:
             self._init_state_prior()
-        self.state_prior_iterator = tqdm.trange(self.prior_epoch,
-                                                self.cfg.num_prior_epochs)
+        self.state_prior_iterator = tqdm.trange(
+            self.prior_epoch, self.cfg.experiment.num_prior_epochs)
         self.state_prior_iterator.set_description("Training prior: ")
         # Reset the log.
         self.log_components = OrderedDict()
         for epoch in self.state_prior_iterator:
             self.prior_epoch = epoch
             self.train_prior()
-            if ((self.prior_epoch + 1) % self.cfg.eval_prior_every) == 0:
+            if ((self.prior_epoch + 1) %
+                    self.cfg.experiment.eval_prior_every) == 0:
                 self.eval_prior()
             self.flush_log(epoch=epoch + self.epoch,
                            iterator=self.state_prior_iterator)
             self.prior_epoch += 1
-            if ((self.prior_epoch + 1) % self.cfg.save_prior_every) == 0:
+            if ((self.prior_epoch + 1) %
+                    self.cfg.experiment.save_prior_every) == 0:
                 self.save_snapshot()
 
         # expose DataParallel module class name for wandb tags
-        tag_func = (lambda m: m.module.__class__.__name__
-                    if self.cfg.data_parallel else m.__class__.__name__)
+        tag_func = (
+            lambda m: m.module.__class__.__name__
+            if self.cfg.experiment.data_parallel else m.__class__.__name__)
         tags = tuple(
             map(tag_func,
                 [self.obs_encoding_net, self.action_ae, self.state_prior]))
@@ -290,11 +295,9 @@ OmegaConf.register_new_resolver('get_only_swept_params', get_only_swept_params)
 def main(cfg):
 
     print("Saving to {}".format(Path.cwd()))
-    # get_sweep_subdir()
-    # print(hydra)
-    # workspace = Workspace(cfg)
-    # workspace.run()
-    # print(OmegaConf.to_yaml(cfg))
+    print(OmegaConf.to_yaml(cfg))
+    workspace = Workspace(cfg)
+    workspace.run()
 
 
 if __name__ == "__main__":

@@ -1,0 +1,24 @@
+# @package _global_
+
+experiment:
+
+  # Dataset details
+  train_fraction: 0.95
+  batch_size: 256
+  num_workers: 32
+  window_size: 5
+
+  # Training details
+  num_training_epochs: 1
+  data_parallel: True
+  optim: Adam
+  save_latents: False
+
+  lr: 1e-4
+  weight_decay: 0.1
+  betas:
+    - 0.9
+    - 0.95
+  grad_norm_clip: 1.0
+  num_prior_epochs: 350
+

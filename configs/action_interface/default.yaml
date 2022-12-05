@@ -1,0 +1,14 @@
+encoder:
+  _target_: torch.nn.Identity
+  output_dim: ${env.obs_dim}
+  
+action_ae:
+  discretizer:
+    _target_: models.action_ae.discretizers.k_means.KMeansDiscretizer
+    action_dim: ${env.action_dim}
+    device: ${experiment.device}
+    predict_offsets: True
+  generator:
+    _target_: models.action_ae.generators.identity.IdentityGenerator
+    input_dim: ${action_interface.encoder.output_dim}
+    output_dim: ${env.action_dim}

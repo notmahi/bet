@@ -1,0 +1,6 @@
+# @package _global_
+
+action_interface:
+  action_ae:
+    discretizer:
+      num_bins: 64

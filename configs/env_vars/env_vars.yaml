@@ -1,4 +1,0 @@
-datasets:
-  carla_multipath_town04_merge: /path/to/datasets/carla_dataset
-  relay_kitchen: /path/to/datasets/relay_kitchen_dataset
-  multimodal_push_fixed_target: /path/to/datasets/block_push_dataset

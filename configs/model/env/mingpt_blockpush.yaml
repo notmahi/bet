@@ -1,0 +1,9 @@
+# @package _global_
+
+# Architecture and loss details
+model: 
+  n_layer: 4
+  n_head: 4
+  n_embd: 72
+  offset_loss_scale: 100000.0  # actions are very small
+  focal_loss_gamma: 2.0

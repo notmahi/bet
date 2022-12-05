@@ -1,0 +1,14 @@
+name: blockpush
+gym_name: BlockPushMultimodal-v0
+obs_dim: 16
+action_dim: 2
+action_min: null
+action_max: null
+
+workspace:
+  _target_: workspaces.block_push.BlockPushWorkspace
+
+dataset:
+  _target_: dataloaders.trajectory_loader.get_push_train_val
+  data_directory: /Users/Manel/Documents/PhD/EPFL/courses/bet-reproduction/data/blockpush
+  window_size: ${experiment.window_size}

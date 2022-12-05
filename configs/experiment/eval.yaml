@@ -1,0 +1,9 @@
+name: eval_${env.name}
+lazy_init_models: True
+device: cpu
+seed: 42
+
+# Plotting setup
+plot_interactions: False
+start_from_seen: False
+record_video: False

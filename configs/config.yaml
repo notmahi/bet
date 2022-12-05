@@ -1,0 +1,11 @@
+defaults:
+  - general: default
+  - env: blockpush
+  - action_interface: default
+  - action_interface/env: default_${env}
+  - model: mingpt
+  - model/env: ${model}_${env}
+  - experiment: train
+  - experiment/env: ${experiment}_${env}
+  - hparams_search: disable
+

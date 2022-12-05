@@ -1,6 +1,5 @@
 **sync-conflict**
 
-exp_local
 __pycache__
 *.pyc
 data
@@ -17,7 +16,6 @@ notebooks
 .ipynb_checkpoints
 *.ipynb
 wandb
-exp
 .DS_Store
 
 # conda env
@@ -28,3 +26,7 @@ share/
 
 # JetBrains
 .idea/
+
+# Runs
+single_runs
+hparams_search_runs

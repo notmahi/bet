@@ -1,0 +1,8 @@
+_target_: models.latent_generators.mingpt.MinGPT
+discrete_input: false
+input_dim: ${action_interface.encoder.output_dim}
+action_dim: ${env.action_dim}
+block_size: ${experiment.window_size}  # Length of history/context
+predict_offsets: True
+
+load_dir: "/absolute/path/to/training_run/directory"

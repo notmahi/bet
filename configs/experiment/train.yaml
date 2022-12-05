@@ -1,0 +1,12 @@
+name: train_${env.name}
+lazy_init_models: True
+device: cpu
+seed: 42
+
+# Prior training details
+eval_prior_every: 1
+save_prior_every: 1
+
+# Logging frequency
+eval_every: 1
+save_every: 1

@@ -1,3 +1,0 @@
-_target_: models.action_ae.generators.identity.IdentityGenerator
-input_dim: ${encoder.output_dim}
-output_dim: ${env.action_dim}
