@@ -40,7 +40,7 @@ The datasets are stored in the `data` folder and are not tracked by `git`.
 2. Extract the datasets into the `data` folder with
 
 ```bash
-tar -xvf bet_data_release.tar.gz -C this_repo/data
+tar -xvf bet_data_release.tar -C this_repo/data
 ```
 
 The contents of the `data` folder should look like this:
@@ -65,10 +65,11 @@ Refer to the Cresset repository for more details.
 Steps prefixed with [CUDA] are only required for the CUDA option.
 
 **Prerequisites:**
+To check if you have each of them run `<command-name> --version` or `<command-name> version` in the terminal.
 
 * [`make`](https://cmake.org/install/).
-* [`docker`](https://docs.docker.com/get-docker/).
-* [`docker compose`](https://docs.docker.com/compose/install/)
+* [`docker`](https://docs.docker.com/get-docker/). (v20.10+)
+* [`docker compose`](https://docs.docker.com/compose/install/) (V2)
 * [CUDA] [Nvidia CUDA Driver](https://www.nvidia.com/download/index.aspx) (Only the driver. No CUDA toolkit, etc)
 * [CUDA] [`nvidia-docker`](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#docker)
 
@@ -78,8 +79,8 @@ Steps prefixed with [CUDA] are only required for the CUDA option.
 cd installation/amd64
 ```
 
-In `Makefile`, change `SERVICE` to `cuda` or `cpu`.
-SERVICE = train
+In `Makefile`, change the first line`SERVICE` to `cuda` or `cpu`. Then run
+
 ```bash
 make env
 ```
@@ -95,9 +96,8 @@ BUILD_MODE=include               # Whether to build PyTorch from source.
 CCA=3.5                          # Compute capability.
 ```
 
-If your Nvidia drivers are also old you may need to change the CUDA Toolkit version.
-See
-the [compatibility matrix](https://docs.nvidia.com/cuda/cuda-toolkit-release-notes/index.html#cuda-major-component-versions__table-cuda-toolkit-driver-versions)
+[CUDA] If your Nvidia drivers are also old you may need to change the CUDA Toolkit version.
+See the [compatibility matrix](https://docs.nvidia.com/cuda/cuda-toolkit-release-notes/index.html#cuda-major-component-versions__table-cuda-toolkit-driver-versions)
 for compatible versions of the CUDA driver and CUDA Toolkit
 
 ```bash
