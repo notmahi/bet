@@ -63,6 +63,9 @@ ${OVERRIDE_FILE}:
 # Cannot use `override` as a recipe name as it is a `make` keyword.
 over: ${OVERRIDE_FILE}
 
+build-debug: check  # Rebuilds the image from the Dockerfile before creating a new container.
+	COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 BUILDKIT_PROGRESS=plain \
+	docker compose -p ${PROJECT} up	--build -d ${SERVICE}
 build: check  # Rebuilds the image from the Dockerfile before creating a new container.
 	COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 \
 	docker compose -p ${PROJECT} up	--build -d ${SERVICE}

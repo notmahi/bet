@@ -17,3 +17,15 @@ nano
 parallel
 rsync
 tmux
+curl
+gedit
+
+# Needed for Mujoco. Taken from https://github.com/openai/mujoco-py/blob/master/Dockerfile
+libgl1-mesa-dev
+libgl1-mesa-glx
+libglew-dev
+libosmesa6-dev
+xvfb
+xpra
+xserver-xorg-dev
+mesa-utils

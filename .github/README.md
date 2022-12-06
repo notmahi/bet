@@ -120,9 +120,47 @@ conda env create --file=installation/arm64/environment.yml
 conda activate behavior-transformer
 ```
 
-
 ### Logging
+### Rendering
 
+### Testing 
+
+Test your setup by running the default training and evaluation scripts in each of the environments.
+
+TODO: make the default config do something minimal
+i.e. num workers 1, take the last training config.
+and the scripts below fo 1 step, 1 episode ....
+
+#### Point-Mass
+
+#### Block-Push
+Training
+
+```bash
+python train.py --config-name=train_blockpush num_prior_epochs=1
+```
+
+Evaluation
+
+```bash
+python run_on_env.py --config-name=eval_blockpush num_eval_steps=10 num_eval_eps=1 enable_render=False
+
+```
+
+#### Kitchen (Franka)
+Training
+
+```bash
+python train.py --config-name=train_kitchen num_prior_epochs=1
+```
+
+Evaluation
+
+```bash
+xvfb-run -a -s "-screen 0 1400x900x24" \
+python run_on_env.py --config-name=eval_kitchen \
+num_eval_steps=10 num_eval_eps=1 enable_render=False
+```
 
 ## Reproducing The Figures
 

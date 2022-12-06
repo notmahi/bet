@@ -503,6 +503,26 @@ RUN echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${HOME}/.zshrc
 # Not so for pre-existing directories, which will still belong to root.
 WORKDIR ${PROJECT_ROOT}
 
+# Project related
+# Install Mujoco
+RUN mkdir -p ${HOME}/.mujoco && \
+    curl https://mujoco.org/download/mujoco210-linux-x86_64.tar.gz --output mujoco.tar.gz && \
+    tar -xzf mujoco.tar.gz -C ${HOME}/.mujoco && \
+    rm mujoco.tar.gz
+
+# Mujoco
+ENV LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libGLEW.so:$LD_PRELOAD
+ENV LD_LIBRARY_PATH /root/.mujoco/mujoco210/bin:${LD_LIBRARY_PATH}
+ENV LD_LIBRARY_PATH /usr/local/nvidia/lib64:${LD_LIBRARY_PATH}
+
+# Kitchen Environment
+ENV PYTHONPATH=$PYTHONPATH:${PROJECT_ROOT}/relay-policy-learning/adept_envs
+# BlockPush
+ENV ASSET_PATH=${PROJECT_ROOT}
+
+# Logging
+ENV WANDB_MODE=disabled
+
 CMD ["/bin/zsh"]
 
 ########################################################################
