@@ -21,7 +21,7 @@ class KMeansDiscretizer(AbstractDiscretizer):
     ):
         super().__init__()
         self.n_bins = num_bins
-        self.device = device
+        self.device = torch.device(device) if torch.cuda.is_available() else torch.device("cpu")
         self.action_dim = action_dim
         self.predict_offsets = predict_offsets
 

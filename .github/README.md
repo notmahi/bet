@@ -110,11 +110,23 @@ CUDNN_VERSION=8                    # Only major version specifications are avail
 
 Build the docker image by running the following.
 
-[CUDA] Replacing `cpu` with `cuda`.
+```bash
+make build
+````
+
+Then to use the environment, run
 
 ```bash
-make build cpu
-````
+make exec
+```
+
+and you'll be inside the container.
+
+To run multiple instances of the container you can use
+
+```bash
+make run
+```
 
 #### MPS
 
@@ -141,7 +153,7 @@ conda activate behavior-transformer
 
 Test your setup by running the default training and evaluation scripts in each of the environments.
 
-TODO: make the default config do something minimal
+TODO: @check with Manuel. make the default config do something minimal
 i.e. num workers 1, take the last training config.
 and the scripts below fo 1 step, 1 episode ....
 
@@ -155,10 +167,11 @@ Training
 python train.py --config-name=train_blockpush num_prior_epochs=1
 ```
 
-Evaluation
+Evaluation. Replace `<date>/<eperiment_timestamp>` with the one you obtained after training.
 
 ```bash
-python run_on_env.py --config-name=eval_blockpush num_eval_steps=10 num_eval_eps=1 enable_render=False
+python run_on_env.py --config-name=eval_blockpush num_eval_steps=10 num_eval_eps=1 enable_render=False \
+load_dir=/opt/project/exp_local/<date>/<eperiment_timestamp>
 
 ```
 
@@ -170,12 +183,12 @@ Training
 python train.py --config-name=train_kitchen num_prior_epochs=1
 ```
 
-Evaluation
+Evaluation. Replace `<date>/<eperiment_timestamp>` with the one you obtained after training.
 
 ```bash
-xvfb-run -a -s "-screen 0 1400x900x24" \
 python run_on_env.py --config-name=eval_kitchen \
-num_eval_steps=10 num_eval_eps=1 enable_render=False
+num_eval_steps=10 num_eval_eps=1 enable_render=False \
+load_dir=/opt/project/exp_local/<date>/<eperiment_timestamp>
 ```
 
 ## Reproducing The Figures

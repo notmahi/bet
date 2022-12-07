@@ -30,11 +30,11 @@
 # A CUDA version such as `11.2` is therefore invalid.
 # Users must specify the full version, e.g., `11.2.2`.
 
-ARG BUILD_MODE=exclude
-ARG USE_CUDA=1
+ARG BUILD_MODE
+ARG USE_CUDA
 ARG USE_PRECOMPILED_HEADERS=1
 ARG CONDA_MANAGER=mamba
-ARG MKL_MODE=include
+ARG MKL_MODE
 ARG CUDA_VERSION=11.7.1
 ARG CUDNN_VERSION=8
 ARG PYTHON_VERSION=3.10
@@ -382,7 +382,8 @@ RUN if [ ${INDEX_URL} ]; then \
 ARG PATH=/opt/conda/bin:${PATH}
 # Using `PIP_CACHE_DIR` to cache previous installations.
 ARG PIP_CACHE_DIR=/tmp/.cache/pip
-COPY --link reqs/pip-train.requirements.txt /tmp/pip/requirements.txt
+ARG PIP_REQUIREMENTS_FILE
+COPY --link reqs/${PIP_REQUIREMENTS_FILE} /tmp/pip/requirements.txt
 # The `/tmp/dist/*.whl` files are the wheels built or installed in previous stages.
 # `--find-links` gives higher priority to the wheels in `/tmp/dist`.
 # Installing all packages in one command allows `pip` to resolve dependencies correctly.
@@ -406,8 +407,8 @@ LABEL maintainer=veritas9872@gmail.com
 ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
 ENV PYTHONIOENCODING=UTF-8
-ARG PYTHONDONTWRITEBYTECODE=1
-ARG PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 ARG DEB_OLD
 ARG DEB_NEW
 ARG DEBIAN_FRONTEND=noninteractive
@@ -524,84 +525,3 @@ ENV ASSET_PATH=${PROJECT_ROOT}
 ENV WANDB_MODE=disabled
 
 CMD ["/bin/zsh"]
-
-########################################################################
-FROM ${BUILD_IMAGE} AS deploy-builds-exclude
-
-COPY --link --from=install-base /opt/conda /opt/conda
-COPY --link --from=build-pillow /tmp/dist  /tmp/dist
-COPY --link --from=fetch-torch  /tmp/dist  /tmp/dist
-COPY --link --from=fetch-vision /tmp/dist  /tmp/dist
-
-########################################################################
-FROM ${BUILD_IMAGE} AS deploy-builds-include
-
-COPY --link --from=install-base /opt/conda /opt/conda
-COPY --link --from=build-pillow /tmp/dist  /tmp/dist
-COPY --link --from=build-vision /tmp/dist  /tmp/dist
-
-########################################################################
-FROM deploy-builds-${BUILD_MODE} AS deploy-builds
-
-# Minimalist deployment preparation layer.
-
-# If any `pip` packages must be compiled on installation, create a wheel in the
-# `build` stages and move it to `/tmp/dist`. Otherwise, the installtion may fail.
-# See `Pillow-SIMD` in the TorchVision build process for an example.
-# The `deploy` image is a CUDA `runtime` image without compiler tools.
-
-# The Anaconda defaults channel and Intel MKL are not fully open-source.
-# Enterprise users may therefore wish to remove them from their final product.
-# The deployment therefore uses system Python. Conda is copied here just in case.
-# Intel packages such as MKL can be removed by using MKL_MODE=exclude during the build.
-# This may also be useful for non-Intel CPUs.
-
-COPY --link reqs/apt-deploy.requirements.txt /tmp/apt/requirements.txt
-COPY --link reqs/pip-deploy.requirements.txt /tmp/pip/requirements.txt
-
-########################################################################
-# Minimalist deployment Ubuntu image.
-FROM ${DEPLOY_IMAGE} AS deploy
-
-LABEL maintainer=veritas9872@gmail.com
-ENV LANG=C.UTF-8
-ENV LC_ALL=C.UTF-8
-ENV PYTHONIOENCODING=UTF-8
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
-
-# Use mirror links optimized for user location and security level.
-ARG DEB_OLD
-ARG DEB_NEW
-
-# Replace the `--mount=...` instructions with `COPY` if BuildKit is unavailable.
-# The `readwrite` option is necessary because `apt` needs write permissions on `\tmp`.
-# Both `python` and `python3` are set to point to the installed version of Python.
-# The pre-installed system Python3 may be overridden if the installed and pre-installed
-# versions of Python3 are the same (e.g., Python 3.8 on Ubuntu 20.04 LTS).
-# `printf` is preferred over `echo` when escape characters are used due to
-# the inconsistent behavior of `echo` across different shells.
-# Using `sed` and `xargs` to imitate the behavior of a requirements file.
-ARG PYTHON_VERSION
-ARG DEBIAN_FRONTEND=noninteractive
-RUN --mount=type=bind,from=deploy-builds,readwrite,source=/tmp/apt,target=/tmp/apt \
-    if [ ${DEB_NEW} ]; then sed -i "s%${DEB_OLD}%${DEB_NEW}%g" /etc/apt/sources.list; fi && \
-    apt-get update && apt-get install -y --no-install-recommends software-properties-common && \
-    add-apt-repository ppa:deadsnakes/ppa && apt-get update && \
-    printf "\n python${PYTHON_VERSION} \n" >> /tmp/apt/requirements.txt && \
-    sed 's/#.*//g; s/\r//g' /tmp/apt/requirements.txt |  \
-    xargs apt-get install -y --no-install-recommends && \
-    rm -rf /var/lib/apt/lists/* && \
-    update-alternatives --install /usr/bin/python3 python3 /usr/bin/python${PYTHON_VERSION} 1 && \
-    update-alternatives --install /usr/bin/python  python  /usr/bin/python${PYTHON_VERSION} 1
-
-# The `mkl` package must be installed for PyTorch to use MKL outside `conda`.
-# The MKL major version used at runtime must match the version used to build PyTorch.
-# The `ldconfig` command is necessary for PyTorch to find MKL and other libraries.
-RUN --mount=type=bind,from=deploy-builds,source=/tmp/pip,target=/tmp/pip \
-    --mount=type=bind,from=deploy-builds,source=/tmp/dist,target=/tmp/dist \
-    python -m pip install --no-cache-dir --upgrade pip setuptools wheel && \
-    python -m pip install --no-cache-dir --find-links /tmp/dist \
-        -r /tmp/pip/requirements.txt \
-        /tmp/dist/*.whl && \
-    ldconfig

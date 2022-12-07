@@ -32,7 +32,7 @@ services:
     # Use different image names for different users and projects.
     # Otherwise, images will be repeatedly removed and recreated.
     # The removed images will remain cached, however.
-    image: bet:${IMAGE_NAME:-train}
+    image: ${IMAGE_NAME:-train}
     network_mode: host  # Use the same network as the host, may cause security issues.
     # `ipc: host` removes the shared memory cap but is a known security vulnerability.
     #    ipc: host  # Equivalent to `--ipc=host` in `docker run`. Disable this on WSL.
@@ -77,7 +77,6 @@ services:
         PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v1.13.0}
         TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.14.0}
         # Variables for downloading PyTorch instead of building.
-        PYTORCH_INDEX_URL: ${PYTORCH_INDEX_URL:-https://download.pytorch.org/whl/cu113}
         PYTORCH_VERSION: ${PYTORCH_VERSION:-1.13.0}
         TORCHVISION_VERSION: ${TORCHVISION_VERSION:-0.14.0}
         PROJECT_ROOT: ${PROJECT_ROOT:-/opt/project}
@@ -91,8 +90,14 @@ services:
 
   cuda:
     extends: train
+    image: ${IMAGE_NAME:-train}:cuda
     environment: # Environment variables for the container, not the build. Equivalent to `--env`
       CUDA_DEVICE_ORDER: PCI_BUS_ID
+    build:
+      args:
+        USE_CUDA: 1
+        PYTORCH_INDEX_URL: ${PYTORCH_INDEX_URL:-https://download.pytorch.org/whl/cu113}
+        PIP_REQUIREMENTS_FILE: pip-cuda.requirements.txt
     deploy: # API dependent on compose version.
       resources:
         reservations:
@@ -103,4 +108,11 @@ services:
 
   cpu:
     extends: train
+    image: ${IMAGE_NAME:-train}:cpu
+    build:
+      args:
+        USE_CUDA: 0
+        PYTORCH_INDEX_URL: ${PYTORCH_INDEX_URL:-https://download.pytorch.org/whl/cpu}
+        PIP_REQUIREMENTS_FILE: pip-cpu.requirements.txt
+
 

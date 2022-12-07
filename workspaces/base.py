@@ -19,7 +19,7 @@ class Workspace:
         self.work_dir = Path.cwd()
         print("Saving to {}".format(self.work_dir))
         self.cfg = cfg
-        self.device = torch.device(cfg.device)
+        self.device = torch.device(cfg.device) if torch.cuda.is_available() else torch.device("cpu")
         utils.set_seed_everywhere(cfg.seed)
         self.helper_procs = []
 
@@ -147,7 +147,7 @@ class Workspace:
         with utils.eval_mode(
             self.action_ae, self.obs_encoding_net, self.state_prior, no_grad=True
         ):
-            obs = torch.from_numpy(obs).float().to(self.cfg.device).unsqueeze(0)
+            obs = torch.from_numpy(obs).float().to(self.device).unsqueeze(0)
             enc_obs = self.obs_encoding_net(obs).squeeze(0)
             enc_obs = einops.repeat(
                 enc_obs, "obs -> batch obs", batch=self.cfg.action_batch_size
@@ -238,7 +238,7 @@ class Workspace:
         for k, v in payload.items():
             if k in keys_to_load:
                 loaded_keys.append(k)
-                self.__dict__[k] = v.to(self.cfg.device)
+                self.__dict__[k] = v.to(self.device)
 
         if len(loaded_keys) != len(keys_to_load):
             raise ValueError(

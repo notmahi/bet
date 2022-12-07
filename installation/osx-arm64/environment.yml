@@ -33,3 +33,4 @@ dependencies:
     - av==9.2.0
     - pybullet==3.2.2
     - protobuf==3.20.1
+    - -r requirements.txt

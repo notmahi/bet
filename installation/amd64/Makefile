@@ -6,11 +6,11 @@
 
 # **Change `SERVICE` to specify other services and projects.**
 SERVICE = cpu
-COMMAND = /bin/zsh
+COMMAND = xvfb-run -a -s "-screen 0 1400x900x24" /bin/zsh
 
 # `PROJECT` is equivalent to `COMPOSE_PROJECT_NAME`.
 # Project names are made unique for each user to prevent name clashes.
-PROJECT = "bet-${USR}"
+PROJECT = "bet-${SERVICE}-${USR}"
 PROJECT_ROOT = /opt/project
 
 # Creates a `.env` file in PWD if it does not exist.
@@ -23,14 +23,15 @@ GID = $(shell id -g)
 UID = $(shell id -u)
 GRP = $(shell id -gn)
 USR = $(shell id -un | tr '[:upper:]' '[:lower:]')
-IMAGE_NAME = "${SERVICE}-${USR}"
+IMAGE_NAME = "bet-${USR}"
 
 # Makefiles require `$\` at the end of a line for multi-line string values.
 # https://www.gnu.org/software/make/manual/html_node/Splitting-Lines.html
+# Temporary fix for mac users. GID and GRP are set to UID AND UST
 ENV_TEXT = "$\
-GID=${GID}\n$\
+GID=${UID}\n$\
 UID=${UID}\n$\
-GRP=${GRP}\n$\
+GRP=${USR}\n$\
 USR=${USR}\n$\
 IMAGE_NAME=${IMAGE_NAME}\n$\
 PROJECT_ROOT=${PROJECT_ROOT}\n$\
