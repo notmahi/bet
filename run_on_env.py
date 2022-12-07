@@ -3,7 +3,7 @@ import joblib
 import numpy as np
 
 
-@hydra.main(version_base="1.2", config_path="configs", config_name="config")
+@hydra.main(version_base="1.2", config_path="configs", config_name="config_eval")
 def main(cfg):
     # Needs _recursive_: False since we have more objects within that we are instantiating
     # without using nested instantiation from hydra
