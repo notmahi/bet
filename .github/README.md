@@ -79,7 +79,9 @@ To check if you have each of them run `<command-name> --version` or `<command-na
 cd installation/amd64
 ```
 
-In `Makefile`, change the first line`SERVICE` to `cuda` or `cpu`. Then run
+[CUDA] In `Makefile`, change the first line `SERVICE=cpu` to `SERVICE=cuda`.
+
+Run
 
 ```bash
 make env
@@ -97,13 +99,22 @@ CCA=3.5                          # Compute capability.
 ```
 
 [CUDA] If your Nvidia drivers are also old you may need to change the CUDA Toolkit version.
-See the [compatibility matrix](https://docs.nvidia.com/cuda/cuda-toolkit-release-notes/index.html#cuda-major-component-versions__table-cuda-toolkit-driver-versions)
+See
+the [compatibility matrix](https://docs.nvidia.com/cuda/cuda-toolkit-release-notes/index.html#cuda-major-component-versions__table-cuda-toolkit-driver-versions)
 for compatible versions of the CUDA driver and CUDA Toolkit
 
 ```bash
 CUDA_VERSION=11.3.1                # Must be compatible with hardware and CUDA driver.
 CUDNN_VERSION=8                    # Only major version specifications are available.
 ```
+
+Build the docker image by running the following.
+
+[CUDA] Replacing `cpu` with `cuda`.
+
+```bash
+make build cpu
+````
 
 #### MPS
 
@@ -112,18 +123,21 @@ unfortunately limiting portability and reproducibility.
 We provide an `environment.yml` file adapted from the BeT's author's repo to be compatible with the M1 system.
 
 **Prerequisites:**
+
 * `conda`: which we recommend installing with [miniforge](https://github.com/conda-forge/miniforge).
 
 **Installation**
+
 ```bash
 conda env create --file=installation/arm64/environment.yml
 conda activate behavior-transformer
 ```
 
 ### Logging
+
 ### Rendering
 
-### Testing 
+### Testing
 
 Test your setup by running the default training and evaluation scripts in each of the environments.
 
@@ -134,6 +148,7 @@ and the scripts below fo 1 step, 1 episode ....
 #### Point-Mass
 
 #### Block-Push
+
 Training
 
 ```bash
@@ -148,6 +163,7 @@ python run_on_env.py --config-name=eval_blockpush num_eval_steps=10 num_eval_eps
 ```
 
 #### Kitchen (Franka)
+
 Training
 
 ```bash

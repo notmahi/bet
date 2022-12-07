@@ -5,12 +5,12 @@
 # https://docs.docker.com/engine/reference/commandline/compose
 
 # **Change `SERVICE` to specify other services and projects.**
-SERVICE = $1
+SERVICE = cpu
 COMMAND = /bin/zsh
 
 # `PROJECT` is equivalent to `COMPOSE_PROJECT_NAME`.
 # Project names are made unique for each user to prevent name clashes.
-PROJECT = "${SERVICE}-${USR}"
+PROJECT = "bet-${USR}"
 PROJECT_ROOT = /opt/project
 
 # Creates a `.env` file in PWD if it does not exist.
@@ -22,7 +22,7 @@ ENV_FILE = .env
 GID = $(shell id -g)
 UID = $(shell id -u)
 GRP = $(shell id -gn)
-USR = $(shell id -un)
+USR = $(shell id -un | tr '[:upper:]' '[:lower:]')
 IMAGE_NAME = "${SERVICE}-${USR}"
 
 # Makefiles require `$\` at the end of a line for multi-line string values.
