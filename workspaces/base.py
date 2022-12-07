@@ -15,7 +15,6 @@ import wandb
 
 
 class Workspace:
-
     def __init__(self, cfg):
         self.work_dir = Path.cwd()
         print("Saving to {}".format(self.work_dir))
@@ -63,19 +62,19 @@ class Workspace:
     def _init_action_ae(self):
         if self.action_ae is None:  # possibly already initialized from snapshot
             self.action_ae = hydra.utils.instantiate(
-                self.cfg.action_interface.action_ae,
-                _recursive_=False).to(self.device)
+                self.cfg.action_interface.action_ae, _recursive_=False
+            ).to(self.device)
             if self.cfg.experiment.data_parallel:
                 self.action_ae = GeneratorDataParallel(self.action_ae)
 
     def _init_obs_encoding_net(self):
         if self.obs_encoding_net is None:  # possibly already initialized from snapshot
             self.obs_encoding_net = hydra.utils.instantiate(
-                self.cfg.action_interface.encoder)
+                self.cfg.action_interface.encoder
+            )
             self.obs_encoding_net = self.obs_encoding_net.to(self.device)
             if self.cfg.experiment.data_parallel:
-                self.obs_encoding_net = torch.nn.DataParallel(
-                    self.obs_encoding_net)
+                self.obs_encoding_net = torch.nn.DataParallel(self.obs_encoding_net)
 
     def _init_state_prior(self):
         if self.state_prior is None:  # possibly already initialized from snapshot
@@ -85,8 +84,7 @@ class Workspace:
                 vocab_size=self.action_ae.num_latents,
             ).to(self.device)
             if self.cfg.experiment.data_parallel:
-                self.state_prior = LatentGeneratorDataParallel(
-                    self.state_prior)
+                self.state_prior = LatentGeneratorDataParallel(self.state_prior)
             self.state_prior_optimizer = self.state_prior.get_optimizer(
                 learning_rate=self.cfg.experiment.lr,
                 weight_decay=self.cfg.experiment.weight_decay,
@@ -110,9 +108,7 @@ class Workspace:
         last_obs = obs
         if self.cfg.experiment.start_from_seen:
             obs = self._start_from_known()
-        action, latents = self._get_action(obs,
-                                           sample=True,
-                                           keep_last_bins=False)
+        action, latents = self._get_action(obs, sample=True, keep_last_bins=False)
         done = False
         total_reward = 0
         obs_history.append(obs)
@@ -132,11 +128,10 @@ class Workspace:
                 obs = last_obs  # use cached observation in case of `None` observation
             else:
                 last_obs = obs  # cache valid observation
-            keep_last_bins = (
-                (i + 1) % self.cfg.experiment.action_update_every) != 0
-            action, latents = self._get_action(obs,
-                                               sample=True,
-                                               keep_last_bins=keep_last_bins)
+            keep_last_bins = ((i + 1) % self.cfg.experiment.action_update_every) != 0
+            action, latents = self._get_action(
+                obs, sample=True, keep_last_bins=keep_last_bins
+            )
             obs_history.append(obs)
             action_history.append(action)
             latent_history.append(latents)
@@ -147,32 +142,29 @@ class Workspace:
     def _report_result_upon_completion(self):
         pass
 
-    def _plot_obs_and_actions(self,
-                              obs,
-                              chosen_action,
-                              done,
-                              all_actions=None):
+    def _plot_obs_and_actions(self, obs, chosen_action, done, all_actions=None):
         print(obs, chosen_action, done)
         raise NotImplementedError
 
     def _get_action(self, obs, sample=False, keep_last_bins=False):
-        with utils.eval_mode(self.action_ae,
-                             self.obs_encoding_net,
-                             self.state_prior,
-                             no_grad=True):
-            obs = torch.from_numpy(obs).float().to(
-                self.cfg.experiment.device).unsqueeze(0)
+        with utils.eval_mode(
+            self.action_ae, self.obs_encoding_net, self.state_prior, no_grad=True
+        ):
+            obs = (
+                torch.from_numpy(obs)
+                .float()
+                .to(self.cfg.experiment.device)
+                .unsqueeze(0)
+            )
             enc_obs = self.obs_encoding_net(obs).squeeze(0)
             enc_obs = einops.repeat(
-                enc_obs,
-                "obs -> batch obs",
-                batch=self.cfg.experiment.action_batch_size)
+                enc_obs, "obs -> batch obs", batch=self.cfg.experiment.action_batch_size
+            )
             # Now, add to history. This automatically handles the case where
             # the history is full.
             self.history.append(enc_obs)
             if self.cfg.experiment.use_state_prior:
-                enc_obs_seq = torch.stack(tuple(self.history),
-                                          dim=0)  # type: ignore
+                enc_obs_seq = torch.stack(tuple(self.history), dim=0)  # type: ignore
                 # Sample latents from the prior
                 latents = self.state_prior.generate_latents(
                     enc_obs_seq,
@@ -205,7 +197,8 @@ class Workspace:
                     action_latents = latents[:, -1:, :]
             else:
                 action_latents = self.action_ae.sample_latents(
-                    num_latents=self.cfg.action_batch_size)
+                    num_latents=self.cfg.action_batch_size
+                )
             actions = self.action_ae.decode_actions(
                 latent_action_batch=action_latents,
                 input_rep_batch=enc_obs,
@@ -215,12 +208,12 @@ class Workspace:
                 sampled_action = np.random.randint(len(actions))
                 actions = actions[sampled_action]
                 # (seq==1, action_dim), since batch dim reduced by sampling
-                actions = einops.rearrange(actions,
-                                           "1 action_dim -> action_dim")
+                actions = einops.rearrange(actions, "1 action_dim -> action_dim")
             else:
                 # (batch, seq==1, action_dim)
                 actions = einops.rearrange(
-                    actions, "batch 1 action_dim -> batch action_dim")
+                    actions, "batch 1 action_dim -> batch action_dim"
+                )
             return actions, (logits_to_save, offsets_to_save, action_latents)
 
     def run(self):
@@ -256,5 +249,7 @@ class Workspace:
                 self.__dict__[k] = v.to(self.cfg.experiment.device)
 
         if len(loaded_keys) != len(keys_to_load):
-            raise ValueError("Snapshot does not contain the following keys: "
-                             f"{set(keys_to_load) - set(loaded_keys)}")
+            raise ValueError(
+                "Snapshot does not contain the following keys: "
+                f"{set(keys_to_load) - set(loaded_keys)}"
+            )

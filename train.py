@@ -18,7 +18,6 @@ import wandb
 
 
 class Workspace:
-
     def __init__(self, cfg):
 
         self.work_dir = Path.cwd()
@@ -55,26 +54,28 @@ class Workspace:
             project=cfg.project,
             config=OmegaConf.to_container(cfg, resolve=True),
         )
-        wandb.config.update({
-            "save_path": self.work_dir,
-        })
+        wandb.config.update(
+            {
+                "save_path": self.work_dir,
+            }
+        )
 
     def _init_action_ae(self):
         if self.action_ae is None:  # possibly already initialized from snapshot
             self.action_ae = hydra.utils.instantiate(
-                self.cfg.action_interface.action_ae.discretizer,
-                _recursive_=False).to(self.device)
+                self.cfg.action_interface.action_ae.discretizer, _recursive_=False
+            ).to(self.device)
             if self.cfg.experiment.data_parallel:
                 self.action_ae = GeneratorDataParallel(self.action_ae)
 
     def _init_obs_encoding_net(self):
         if self.obs_encoding_net is None:  # possibly already initialized from snapshot
             self.obs_encoding_net = hydra.utils.instantiate(
-                self.cfg.action_interface.encoder)
+                self.cfg.action_interface.encoder
+            )
             self.obs_encoding_net = self.obs_encoding_net.to(self.device)
             if self.cfg.experiment.data_parallel:
-                self.obs_encoding_net = torch.nn.DataParallel(
-                    self.obs_encoding_net)
+                self.obs_encoding_net = torch.nn.DataParallel(self.obs_encoding_net)
 
     def _init_state_prior(self):
         if self.state_prior is None:  # possibly already initialized from snapshot
@@ -84,8 +85,7 @@ class Workspace:
                 vocab_size=self.action_ae.num_latents,
             ).to(self.device)
             if self.cfg.experiment.data_parallel:
-                self.state_prior = LatentGeneratorDataParallel(
-                    self.state_prior)
+                self.state_prior = LatentGeneratorDataParallel(self.state_prior)
             self.state_prior_optimizer = self.state_prior.get_optimizer(
                 learning_rate=self.cfg.experiment.lr,
                 weight_decay=self.cfg.experiment.weight_decay,
@@ -120,8 +120,9 @@ class Workspace:
     def train_prior(self):
         self.state_prior.train()
         with utils.eval_mode(self.obs_encoding_net, self.action_ae):
-            pbar = tqdm.tqdm(self.train_loader,
-                             desc=f"Training prior epoch {self.prior_epoch}")
+            pbar = tqdm.tqdm(
+                self.train_loader, desc=f"Training prior epoch {self.prior_epoch}"
+            )
             for data in pbar:
                 observations, action, mask = data
                 self.state_prior_optimizer.zero_grad(set_to_none=True)
@@ -135,17 +136,15 @@ class Workspace:
                 )
                 loss.backward()
                 torch.nn.utils.clip_grad_norm_(
-                    self.state_prior.parameters(),
-                    self.cfg.experiment.grad_norm_clip)
+                    self.state_prior.parameters(), self.cfg.experiment.grad_norm_clip
+                )
                 self.state_prior_optimizer.step()
-                self.log_append("prior_train", len(observations),
-                                loss_components)
+                self.log_append("prior_train", len(observations), loss_components)
 
     def eval_prior(self):
-        with utils.eval_mode(self.obs_encoding_net,
-                             self.action_ae,
-                             self.state_prior,
-                             no_grad=True):
+        with utils.eval_mode(
+            self.obs_encoding_net, self.action_ae, self.state_prior, no_grad=True
+        ):
             for observations, action, mask in self.test_loader:
                 obs, act = observations.to(self.device), action.to(self.device)
                 enc_obs = self.obs_encoding_net(obs)
@@ -155,8 +154,7 @@ class Workspace:
                     target_latents=latent,
                     return_loss_components=True,
                 )
-                self.log_append("prior_eval", len(observations),
-                                loss_components)
+                self.log_append("prior_eval", len(observations), loss_components)
 
     def run(self):
         snapshot = self.snapshot
@@ -179,30 +177,30 @@ class Workspace:
         if self.cfg.experiment.lazy_init_models:
             self._init_state_prior()
         self.state_prior_iterator = tqdm.trange(
-            self.prior_epoch, self.cfg.experiment.num_prior_epochs)
+            self.prior_epoch, self.cfg.experiment.num_prior_epochs
+        )
         self.state_prior_iterator.set_description("Training prior: ")
         # Reset the log.
         self.log_components = OrderedDict()
         for epoch in self.state_prior_iterator:
             self.prior_epoch = epoch
             self.train_prior()
-            if ((self.prior_epoch + 1) %
-                    self.cfg.experiment.eval_prior_every) == 0:
+            if ((self.prior_epoch + 1) % self.cfg.experiment.eval_prior_every) == 0:
                 self.eval_prior()
-            self.flush_log(epoch=epoch + self.epoch,
-                           iterator=self.state_prior_iterator)
+            self.flush_log(epoch=epoch + self.epoch, iterator=self.state_prior_iterator)
             self.prior_epoch += 1
-            if ((self.prior_epoch + 1) %
-                    self.cfg.experiment.save_prior_every) == 0:
+            if ((self.prior_epoch + 1) % self.cfg.experiment.save_prior_every) == 0:
                 self.save_snapshot()
 
         # expose DataParallel module class name for wandb tags
         tag_func = (
             lambda m: m.module.__class__.__name__
-            if self.cfg.experiment.data_parallel else m.__class__.__name__)
+            if self.cfg.experiment.data_parallel
+            else m.__class__.__name__
+        )
         tags = tuple(
-            map(tag_func,
-                [self.obs_encoding_net, self.action_ae, self.state_prior]))
+            map(tag_func, [self.obs_encoding_net, self.action_ae, self.state_prior])
+        )
         self.wandb_run.tags += tags
 
     @property
@@ -223,9 +221,7 @@ class Workspace:
 
     def save_latents(self):
         total_mse_loss = 0
-        with utils.eval_mode(self.action_ae,
-                             self.obs_encoding_net,
-                             no_grad=True):
+        with utils.eval_mode(self.action_ae, self.obs_encoding_net, no_grad=True):
             for observations, action, mask in self.latent_collection_loader:
                 obs, act = observations.to(self.device), action.to(self.device)
                 enc_obs = self.obs_encoding_net(obs)
@@ -234,18 +230,14 @@ class Workspace:
                     latent,
                     enc_obs,
                 )
-                total_mse_loss += F.mse_loss(act,
-                                             reconstructed_action,
-                                             reduction="sum")
+                total_mse_loss += F.mse_loss(act, reconstructed_action, reduction="sum")
                 if type(latent) == tuple:
                     # serialize into tensor; assumes last dim is latent dim
                     detached_latents = tuple(x.detach() for x in latent)
-                    self._training_latents.append(
-                        torch.cat(detached_latents, dim=-1))
+                    self._training_latents.append(torch.cat(detached_latents, dim=-1))
                 else:
                     self._training_latents.append(latent.detach())
-        self._training_latents_tensor = torch.cat(self._training_latents,
-                                                  dim=0)
+        self._training_latents_tensor = torch.cat(self._training_latents, dim=0)
         logging.info(f"Total MSE reconstruction loss: {total_mse_loss}")
         logging.info(
             f"Average MSE reconstruction loss: {total_mse_loss / len(self._training_latents_tensor)}"
@@ -281,14 +273,16 @@ class Workspace:
             log_key, name_key = key.split("/")
             iterator_log_name = f"{log_key[0]}{name_key[0]}".upper()
             iterator_log_component[iterator_log_name] = to_log
-        postfix = ",".join("{}:{:.2e}".format(key, iterator_log_component[key])
-                           for key in iterator_log_component.keys())
+        postfix = ",".join(
+            "{}:{:.2e}".format(key, iterator_log_component[key])
+            for key in iterator_log_component.keys()
+        )
         iterator.set_postfix_str(postfix)
         wandb.log(log_components, step=epoch)
         self.log_components = OrderedDict()
 
 
-OmegaConf.register_new_resolver('get_only_swept_params', get_only_swept_params)
+OmegaConf.register_new_resolver("get_only_swept_params", get_only_swept_params)
 
 
 @hydra.main(version_base="1.2", config_path="configs", config_name="config")

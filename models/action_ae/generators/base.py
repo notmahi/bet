@@ -11,7 +11,6 @@ from models.action_ae import AbstractActionAE
 
 
 class AbstractGenerator(AbstractActionAE, utils.TrainWithLogger):
-
     def to(self, device: Union[str, torch.device]) -> None:
         self.device = device
         super().to(device)
@@ -34,8 +33,7 @@ class AbstractGenerator(AbstractActionAE, utils.TrainWithLogger):
             param_list += elem["params"]
         param_set = set(param_list)
         if not param_set.issuperset(obs_encoding_net.parameters()):
-            self.optimizer.add_param_group(
-                {"params": obs_encoding_net.parameters()})
+            self.optimizer.add_param_group({"params": obs_encoding_net.parameters()})
         self.iterator = range(self.train_experiment.num_training_epochs)
         self.reset_log()
         for epoch in self.iterator:
@@ -49,20 +47,21 @@ class AbstractGenerator(AbstractActionAE, utils.TrainWithLogger):
             if ((self.epoch + 1) % self.train_cfg.experiment.save_every) == 0:
                 self.save_snapshot()
 
-    def eval_epoch(self,
-                   input_dataloader: DataLoader,
-                   obs_encoding_net: Optional[nn.Module] = None) -> None:
+    def eval_epoch(
+        self, input_dataloader: DataLoader, obs_encoding_net: Optional[nn.Module] = None
+    ) -> None:
         with utils.eval_mode(self, obs_encoding_net):
             for observations, action in input_dataloader:
                 obs, act = observations.to(self.device), action.to(self.device)
                 enc_obs = obs_encoding_net(obs)
                 _, _, loss_components = self.calculate_encodings_and_loss(
-                    act, enc_obs, return_all_losses=True)
+                    act, enc_obs, return_all_losses=True
+                )
                 self.log_append("eval", len(observations), loss_components)
 
-    def train_epoch(self,
-                    input_dataloader: DataLoader,
-                    obs_encoding_net: Optional[nn.Module] = None) -> None:
+    def train_epoch(
+        self, input_dataloader: DataLoader, obs_encoding_net: Optional[nn.Module] = None
+    ) -> None:
         self.train()
         obs_encoding_net.train()
         for observations, action, mask in input_dataloader:
@@ -71,12 +70,15 @@ class AbstractGenerator(AbstractActionAE, utils.TrainWithLogger):
             obs, act = observations.to(self.device), action.to(self.device)
             enc_obs = obs_encoding_net(obs)
             _, loss, loss_components = self.calculate_encodings_and_loss(
-                act, enc_obs, return_all_losses=True)
+                act, enc_obs, return_all_losses=True
+            )
             loss.backward()
-            nn.utils.clip_grad_norm_(self.parameters(),
-                                     self.train_cfg.experiment.grad_norm_clip)
-            nn.utils.clip_grad_norm_(obs_encoding_net.parameters(),
-                                     self.train_cfg.experiment.grad_norm_clip)
+            nn.utils.clip_grad_norm_(
+                self.parameters(), self.train_cfg.experiment.grad_norm_clip
+            )
+            nn.utils.clip_grad_norm_(
+                obs_encoding_net.parameters(), self.train_cfg.experiment.grad_norm_clip
+            )
             self.optimizer.step()
             self.log_append("train", len(observations), loss_components)
 
@@ -118,8 +120,7 @@ class AbstractGenerator(AbstractActionAE, utils.TrainWithLogger):
         return
 
     @abc.abstractmethod
-    def sample_latents(self,
-                       num_latents: Optional[int] = None) -> torch.Tensor:
+    def sample_latents(self, num_latents: Optional[int] = None) -> torch.Tensor:
         """
         Sample possible latents from this generator class.
 
@@ -133,7 +134,6 @@ class AbstractGenerator(AbstractActionAE, utils.TrainWithLogger):
 
 
 class GeneratorDataParallel(nn.DataParallel):
-
     def encode_into_latent(self, *args, **kwargs):
         return self.module.encode_into_latent(*args, **kwargs)
 

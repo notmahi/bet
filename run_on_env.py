@@ -7,9 +7,7 @@ import numpy as np
 def main(cfg):
     # Needs _recursive_: False since we have more objects within that we are instantiating
     # without using nested instantiation from hydra
-    workspace = hydra.utils.instantiate(cfg.env.workspace,
-                                        cfg=cfg,
-                                        _recursive_=False)
+    workspace = hydra.utils.instantiate(cfg.env.workspace, cfg=cfg, _recursive_=False)
     rewards, infos = workspace.run()
     print(rewards)
     print(infos)
