@@ -21,6 +21,6 @@ def get_only_swept_params():
     for override_param in override_params:
         key, value = override_param.split("=")
         if key in swept_params and key != "experiment.seed":
-            swept_params_list.append(key + f":{float(value):.5f}")
+            swept_params_list.append(key + f":{float(value):.4g}")
 
     return "__".join(swept_params_list)
