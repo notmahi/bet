@@ -5,4 +5,6 @@ action_dim: ${env.action_dim}
 block_size: ${experiment.window_size}  # Length of history/context
 predict_offsets: True
 
+# Pick cross validation run model
 load_dir: "/absolute/path/to/training_run/directory"
+cv_run_idx: 0

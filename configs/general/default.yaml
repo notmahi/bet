@@ -12,4 +12,4 @@ hydra:
     dir: ./single_runs/${experiment.name}/${now:%Y.%m.%d-%H.%M.%S}
   sweep:
     dir: ./sweeper_runs/${experiment.name}/${now:%Y.%m.%d-%H.%M}
-    subdir: ${get_only_swept_params:}/seed=${experiment.seed}
+    subdir: ${get_only_swept_params:}

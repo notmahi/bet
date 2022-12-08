@@ -10,3 +10,6 @@ save_prior_every: 1
 # Logging frequency
 eval_every: 1
 save_every: 1
+
+# Cross-validation
+num_cv_runs: 2

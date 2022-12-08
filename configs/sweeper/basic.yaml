@@ -4,7 +4,7 @@ hydra:
   mode: MULTIRUN
   sweeper:
     params:
-      experiment.lr: 1e-4,1e-3
-      # experiment.weight_decay: 0.1,0.2
+      experiment.lr: 1e-4,1e-3 
+      experiment.weight_decay: 0.1,0.2
 
         

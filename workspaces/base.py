@@ -17,7 +17,7 @@ import wandb
 class Workspace:
     def __init__(self, cfg):
         self.work_dir = Path.cwd()
-        print("Saving to {}".format(self.work_dir))
+        print("Working directory: {}".format(self.work_dir))
         self.cfg = cfg
         self.device = torch.device(cfg.experiment.device)
         utils.set_seed_everywhere(cfg.experiment.seed)
@@ -236,7 +236,10 @@ class Workspace:
 
     @property
     def snapshot(self):
-        return Path(self.cfg.model.load_dir or self.work_dir) / "snapshot.pt"
+        return (
+            Path(self.cfg.model.load_dir or self.work_dir)
+            / f"snapshot_{self.cfg.model.cv_run_idx}.pt"
+        )
 
     def load_snapshot(self):
         keys_to_load = ["action_ae", "obs_encoding_net", "state_prior"]

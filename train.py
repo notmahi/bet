@@ -18,17 +18,19 @@ import wandb
 
 
 class Workspace:
-    def __init__(self, cfg):
+    def __init__(self, cfg, cv_run_idx):
 
         self.work_dir = Path.cwd()
         print("Saving to {}".format(self.work_dir))
         self.cfg = cfg
+        self.cv_run_idx = cv_run_idx
         self.device = torch.device(cfg.experiment.device)
-        utils.set_seed_everywhere(cfg.experiment.seed)
+        self.seed = cfg.experiment.seed + self.cv_run_idx
+        utils.set_seed_everywhere(self.seed)
         self.dataset = hydra.utils.call(
             cfg.env.dataset,
             train_fraction=cfg.experiment.train_fraction,
-            random_seed=cfg.experiment.seed,
+            random_seed=self.seed,
             device=self.device,
         )
         self.train_set, self.test_set = self.dataset
@@ -117,7 +119,7 @@ class Workspace:
             pin_memory=True,
         )
 
-    def train_prior(self):
+    def train_prior_one_epoch(self):
         self.state_prior.train()
         with utils.eval_mode(self.obs_encoding_net, self.action_ae):
             pbar = tqdm.tqdm(
@@ -145,6 +147,7 @@ class Workspace:
         with utils.eval_mode(
             self.obs_encoding_net, self.action_ae, self.state_prior, no_grad=True
         ):
+            loss_list = []
             for observations, action, mask in self.test_loader:
                 obs, act = observations.to(self.device), action.to(self.device)
                 enc_obs = self.obs_encoding_net(obs)
@@ -155,6 +158,10 @@ class Workspace:
                     return_loss_components=True,
                 )
                 self.log_append("prior_eval", len(observations), loss_components)
+                loss_list.append(loss.detach().numpy())
+
+            mean_loss = sum(loss_list) / len(loss_list)
+            return mean_loss
 
     def run(self):
         snapshot = self.snapshot
@@ -173,7 +180,7 @@ class Workspace:
         if self.cfg.experiment.save_latents:
             self.save_latents()
 
-        # Train the action prior model.
+        # Train the action prior model
         if self.cfg.experiment.lazy_init_models:
             self._init_state_prior()
         self.state_prior_iterator = tqdm.trange(
@@ -182,14 +189,22 @@ class Workspace:
         self.state_prior_iterator.set_description("Training prior: ")
         # Reset the log.
         self.log_components = OrderedDict()
+        self.save_snapshot()
+        self.best_model_loss = self.eval_prior()
         for epoch in self.state_prior_iterator:
+            # Train
             self.prior_epoch = epoch
-            self.train_prior()
+            self.train_prior_one_epoch()
+            # Report
             if ((self.prior_epoch + 1) % self.cfg.experiment.eval_prior_every) == 0:
-                self.eval_prior()
+                this_epoch_model_loss = self.eval_prior()
             self.flush_log(epoch=epoch + self.epoch, iterator=self.state_prior_iterator)
             self.prior_epoch += 1
-            if ((self.prior_epoch + 1) % self.cfg.experiment.save_prior_every) == 0:
+            if (
+                (self.prior_epoch + 1) % self.cfg.experiment.save_prior_every
+            ) == 0 and this_epoch_model_loss < self.best_model_loss:
+
+                self.best_model_loss = this_epoch_model_loss
                 self.save_snapshot()
 
         # expose DataParallel module class name for wandb tags
@@ -205,7 +220,7 @@ class Workspace:
 
     @property
     def snapshot(self):
-        return self.work_dir / "snapshot.pt"
+        return self.work_dir / f"snapshot_{self.cv_run_idx}.pt"
 
     def save_snapshot(self):
         self._keys_to_save = [
@@ -282,18 +297,31 @@ class Workspace:
         self.log_components = OrderedDict()
 
 
+log = logging.getLogger(__name__)
+
 OmegaConf.register_new_resolver("get_only_swept_params", get_only_swept_params)
 
 
-@hydra.main(version_base="1.2", config_path="configs", config_name="config")
+@hydra.main(version_base="1.2", config_path="configs", config_name="config_train")
 def main(cfg):
 
-    print("Saving to {}".format(Path.cwd()))
-    print(OmegaConf.to_yaml(cfg))
-    workspace = Workspace(cfg)
-    workspace.run()
+    # Uncomment line below to print cfg file being generated
+    # print(OmegaConf.to_yaml(cfg)
+
+    # Cross-validation
+    cv_losses = []
+    for cv_run_idx in range(cfg.experiment.num_cv_runs):
+        print(f"\n==== Starting cross-validation run: {cv_run_idx} ====")
+        workspace = Workspace(cfg, cv_run_idx)
+        workspace.run()
+        cv_losses.append(workspace.best_model_loss)
+        log.info(f"Best model loss of run {cv_run_idx}: {workspace.best_model_loss}")
+
+    # Getting performance metric for the combination of hyperparameters used
+    objective = sum(cv_losses) / len(cv_losses)
+    log.info(f"Mean test loss across cross-validation runs: {objective}")
+    return objective
 
 
 if __name__ == "__main__":
-
     main()
