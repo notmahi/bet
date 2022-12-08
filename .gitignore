@@ -29,4 +29,4 @@ share/
 
 # Runs
 single_runs
-hparams_search_runs
+sweeper_runs

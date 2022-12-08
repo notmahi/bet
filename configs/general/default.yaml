@@ -11,5 +11,5 @@ hydra:
   run:
     dir: ./single_runs/${experiment.name}/${now:%Y.%m.%d-%H.%M.%S}
   sweep:
-    dir: ./hparams_search_runs/${experiment.name}/${now:%Y.%m.%d-%H.%M}
+    dir: ./sweeper_runs/${experiment.name}/${now:%Y.%m.%d-%H.%M}
     subdir: ${get_only_swept_params:}/seed=${experiment.seed}

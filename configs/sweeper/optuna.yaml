@@ -1,0 +1,21 @@
+# @package _global_  
+
+hydra:
+  mode: MULTIRUN
+  sweeper:
+    sampler:
+      seed: 0  # needed for reproducibility
+    direction: minimize  # minimize objective
+    study_name: ${experiment.name}
+    storage: null  # Storage URL to persist optimization results. https://optuna.readthedocs.io/en/stable/reference/storages.html
+    n_trials: 2  # total number of function evaluations
+    n_jobs: 1  # number of parallel workers
+    # max_failure_rate: 0.0  # NOT WORKING. Maximum authorized failure rate for a batch of parameters
+    params:
+      experiment.lr: tag(log, interval(0.0001, 2)) # it also possible to consider only integers in an interval by casting the interval to `int`: int(interval(0.0001, 2))
+      experiment.weight_decay: range(0, 0.51, step=0.1) # for categorical use choice(0, 0.1, 0.2, 0.3, 0.4, 0.5)
+      
+# Find all possible optuna config arguments here: 
+# https://hydra.cc/docs/plugins/optuna_sweeper/
+
+        
