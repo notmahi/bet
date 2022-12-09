@@ -25,12 +25,11 @@ class Workspace:
         self.cfg = cfg
         self.cv_run_idx = cv_run_idx
         self.device = torch.device(cfg.experiment.device)
-        self.seed = cfg.experiment.seed + self.cv_run_idx
-        utils.set_seed_everywhere(self.seed)
+        utils.set_seed_everywhere(cfg.experiment.seed)
         self.dataset = hydra.utils.call(
             cfg.env.dataset,
             train_fraction=cfg.experiment.train_fraction,
-            random_seed=self.seed,
+            random_seed=cfg.experiment.seed,
             device=self.device,
         )
         self.train_set, self.test_set = self.dataset
@@ -51,16 +50,14 @@ class Workspace:
         self.save_training_latents = False
         self._training_latents = []
 
+        # WandB initialization
         self.wandb_run = wandb.init(
             dir=str(self.work_dir),
             project=cfg.project,
             config=OmegaConf.to_container(cfg, resolve=True),
+            reinit=True,
         )
-        wandb.config.update(
-            {
-                "save_path": self.work_dir,
-            }
-        )
+        wandb.config.update({"save_path": self.work_dir})
 
     def _init_action_ae(self):
         if self.action_ae is None:  # possibly already initialized from snapshot
@@ -159,7 +156,6 @@ class Workspace:
                 )
                 self.log_append("prior_eval", len(observations), loss_components)
                 loss_list.append(loss.detach().numpy())
-
             mean_loss = sum(loss_list) / len(loss_list)
             return mean_loss
 
@@ -198,8 +194,10 @@ class Workspace:
             # Report
             if ((self.prior_epoch + 1) % self.cfg.experiment.eval_prior_every) == 0:
                 this_epoch_model_loss = self.eval_prior()
-            self.flush_log(epoch=epoch + self.epoch, iterator=self.state_prior_iterator)
-            self.prior_epoch += 1
+                self.flush_log(
+                    epoch=epoch + self.epoch, iterator=self.state_prior_iterator
+                )
+                self.prior_epoch += 1
             if (
                 (self.prior_epoch + 1) % self.cfg.experiment.save_prior_every
             ) == 0 and this_epoch_model_loss < self.best_model_loss:
@@ -217,6 +215,7 @@ class Workspace:
             map(tag_func, [self.obs_encoding_net, self.action_ae, self.state_prior])
         )
         self.wandb_run.tags += tags
+        self.wandb_run.finish()
 
     @property
     def snapshot(self):
@@ -269,9 +268,17 @@ class Workspace:
             logging.warning("Keys not found in snapshot: %s", not_in_payload)
 
     def log_append(self, log_key, length, loss_components):
+
         for key, value in loss_components.items():
+            # all the `key_name`s used:
+            # prior_eval/class, prior_eval/offset, prior_eval/total
+            # or
+            # prior_train/class, prior_train/offset, prior_train/total
             key_name = f"{log_key}/{key}"
+            # set counter and sum to 0
             count, sum = self.log_components.get(key_name, (0, 0.0))
+            # for each keyname, assign a tuple:
+            # (total number of observations, sum of losses for all observations)
             self.log_components[key_name] = (
                 count + length,
                 sum + (length * value.detach().cpu().item()),
@@ -295,11 +302,35 @@ class Workspace:
         iterator.set_postfix_str(postfix)
         wandb.log(log_components, step=epoch)
         self.log_components = OrderedDict()
+        # TODO: compare log components with actual loss (eval_prior) reported
 
 
 log = logging.getLogger(__name__)
 
 OmegaConf.register_new_resolver("get_only_swept_params", get_only_swept_params)
+
+
+def run_cross_validation(cfg):
+    """"""
+
+    cv_losses = []
+    for cv_run_idx in range(cfg.experiment.num_cv_runs):
+        print(f"\n==== Starting cross-validation run: {cv_run_idx} ====")
+        # Change cfg for new cross-validation run
+        cfg.experiment.seed = cv_run_idx
+        cfg.experiment.cv_run_idx = cv_run_idx
+        # Generate workspace (training)
+        workspace = Workspace(cfg, cv_run_idx)
+        workspace.run()
+        cv_losses.append(workspace.best_model_loss)
+        log.info(
+            f"Cross-validation run: {cv_run_idx}\n"
+            f"Best model loss: {workspace.best_model_loss}\n"
+            f"Saved in {workspace.work_dir}"
+        )
+        print(f"==== End of run {cv_run_idx}: {workspace.best_model_loss} ====\n")
+
+    return cv_losses
 
 
 @hydra.main(version_base="1.2", config_path="configs", config_name="config_train")
@@ -309,13 +340,7 @@ def main(cfg):
     # print(OmegaConf.to_yaml(cfg)
 
     # Cross-validation
-    cv_losses = []
-    for cv_run_idx in range(cfg.experiment.num_cv_runs):
-        print(f"\n==== Starting cross-validation run: {cv_run_idx} ====")
-        workspace = Workspace(cfg, cv_run_idx)
-        workspace.run()
-        cv_losses.append(workspace.best_model_loss)
-        log.info(f"Best model loss of run {cv_run_idx}: {workspace.best_model_loss}")
+    cv_losses = run_cross_validation(cfg)
 
     # Getting performance metric for the combination of hyperparameters used
     objective = sum(cv_losses) / len(cv_losses)
