@@ -53,11 +53,11 @@ We provide installation methods to meet different systems.
 The methods aim to insure easiness of use, portability, and reproducibility thanks to Docker.
 It is hard to cover all systems, so we focused on the main ones.
 
-1. **amd64 with CUDA:** for machines with Nvidia GPUs with Intel CPUs.
-2. **amd 64 CPU-only:** for machines with Intel CPUs.
-3. **arm64 with MPS:** to leverage the M1 GPU of Apple machines.
+A. **amd64 with CUDA:** for machines with Nvidia GPUs with Intel CPUs.
+B. **amd 64 CPU-only:** for machines with Intel CPUs.
+C. **arm64 with MPS:** to leverage the M1 GPU of Apple machines.
 
-#### amd64 (CUDA and CPU-only)
+#### A&B. amd64 (CUDA and CPU-only)
 
 This installation method is adapted from the [Cresset initiative](https://github.com/cresset-template/cresset).
 Refer to the Cresset repository for more details.
@@ -128,7 +128,7 @@ To run multiple instances of the container you can use
 make run
 ```
 
-#### MPS
+#### C. MPS
 
 As the MPS backend isn't supported on PyTorch on Docker, this methods relies on a local installation of `conda`, thus
 unfortunately limiting portability and reproducibility.
