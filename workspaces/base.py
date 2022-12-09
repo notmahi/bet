@@ -40,7 +40,6 @@ class Workspace:
             self._init_obs_encoding_net()
             self._init_state_prior()
 
-        print(cfg._content)
         wandb.init(dir=self.work_dir, project=cfg.project, config=cfg._content)
         self.epoch = 0
         self.load_snapshot()
