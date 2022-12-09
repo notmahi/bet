@@ -18,13 +18,14 @@ import wandb
 
 
 class Workspace:
-    def __init__(self, cfg, cv_run_idx):
+    def __init__(self, cfg):
 
         self.work_dir = Path.cwd()
         print("Saving to {}".format(self.work_dir))
         self.cfg = cfg
-        self.cv_run_idx = cv_run_idx
-        self.device = torch.device(cfg.experiment.device)
+        self.device = torch.device(cfg.experiment.device) if torch.cuda.is_available() else torch.device("cpu")
+        if self.cfg.experiment.data_parallel and self.device == torch.device("cpu"):
+            raise ValueError("Data parallel is not supported on CPU")
         utils.set_seed_everywhere(cfg.experiment.seed)
         self.dataset = hydra.utils.call(
             cfg.env.dataset,
@@ -155,7 +156,7 @@ class Workspace:
                     return_loss_components=True,
                 )
                 self.log_append("prior_eval", len(observations), loss_components)
-                loss_list.append(loss.detach().numpy())
+                loss_list.append(loss.detach().cpu().numpy())
             mean_loss = sum(loss_list) / len(loss_list)
             return mean_loss
 
@@ -219,7 +220,7 @@ class Workspace:
 
     @property
     def snapshot(self):
-        return self.work_dir / f"snapshot_{self.cv_run_idx}.pt"
+        return self.work_dir / f"snapshot_{self.cfg.experiment.cv_run_idx}.pt"
 
     def save_snapshot(self):
         self._keys_to_save = [
@@ -320,7 +321,7 @@ def run_cross_validation(cfg):
         cfg.experiment.seed = cv_run_idx
         cfg.experiment.cv_run_idx = cv_run_idx
         # Generate workspace (training)
-        workspace = Workspace(cfg, cv_run_idx)
+        workspace = Workspace(cfg)
         workspace.run()
         cv_losses.append(workspace.best_model_loss)
         log.info(

@@ -1,10 +1,12 @@
 name: eval_${env.name}
 lazy_init_models: True
-device: cpu
+device: cuda
 seed: 42
 
 # Plotting setup
 plot_interactions: False
 start_from_seen: False
 record_video: False
+cv_run_idx: 0
+data_parallel: False
 

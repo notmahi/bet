@@ -1,6 +1,6 @@
 name: train_${env.name}
 lazy_init_models: True
-device: cpu
+device: cuda
 seed: 42
 
 # Prior training details

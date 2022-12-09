@@ -19,7 +19,9 @@ class Workspace:
         self.work_dir = Path.cwd()
         print("Working directory: {}".format(self.work_dir))
         self.cfg = cfg
-        self.device = torch.device(cfg.experiment.device)
+        self.device = torch.device(cfg.experiment.device) if torch.cuda.is_available() else torch.device("cpu")
+        if self.cfg.experiment.data_parallel and self.device == torch.device("cpu"):
+            raise ValueError("Data parallel is not supported on CPU")
         utils.set_seed_everywhere(cfg.experiment.seed)
         self.helper_procs = []
 
@@ -149,12 +151,7 @@ class Workspace:
         with utils.eval_mode(
             self.action_ae, self.obs_encoding_net, self.state_prior, no_grad=True
         ):
-            obs = (
-                torch.from_numpy(obs)
-                .float()
-                .to(self.cfg.experiment.device)
-                .unsqueeze(0)
-            )
+            obs = torch.from_numpy(obs).float().to(self.device).unsqueeze(0)
             enc_obs = self.obs_encoding_net(obs).squeeze(0)
             enc_obs = einops.repeat(
                 enc_obs, "obs -> batch obs", batch=self.cfg.experiment.action_batch_size
@@ -237,7 +234,7 @@ class Workspace:
     def snapshot(self):
         return (
             Path(self.cfg.model.load_dir or self.work_dir)
-            / f"snapshot_{self.cfg.model.cv_run_idx}.pt"
+            / f"snapshot_{self.cfg.experiment.cv_run_idx}.pt"
         )
 
     def load_snapshot(self):
@@ -248,7 +245,7 @@ class Workspace:
         for k, v in payload.items():
             if k in keys_to_load:
                 loaded_keys.append(k)
-                self.__dict__[k] = v.to(self.cfg.experiment.device)
+                self.__dict__[k] = v.to(self.device)
 
         if len(loaded_keys) != len(keys_to_load):
             raise ValueError(

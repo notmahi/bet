@@ -12,7 +12,7 @@ workspace:
 
 dataset:
   _target_: dataloaders.trajectory_loader.get_relay_kitchen_train_val
-  data_directory: /Users/Manel/Documents/PhD/EPFL/courses/bet-reproduction/data/kitchen
+  data_directory: ./data/bet_data_release/kitchen
   window_size: ${experiment.window_size}
   
 

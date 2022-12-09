@@ -10,5 +10,5 @@ workspace:
 
 dataset:
   _target_: dataloaders.trajectory_loader.get_push_train_val
-  data_directory: /Users/Manel/Documents/PhD/EPFL/courses/bet-reproduction/data/blockpush
+  data_directory: ./data/bet_data_release/blockpush
   window_size: ${experiment.window_size}

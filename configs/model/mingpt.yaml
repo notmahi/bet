@@ -7,4 +7,3 @@ predict_offsets: True
 
 # Pick cross validation run model
 load_dir: "/absolute/path/to/training_run/directory"
-cv_run_idx: 0

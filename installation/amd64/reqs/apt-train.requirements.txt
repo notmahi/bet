@@ -1,0 +1,31 @@
+# Example `apt` requirements file for Ubuntu 22.04 LTS.
+
+# Essential packages.
+libjemalloc2
+libjpeg-turbo8
+libpng16-16
+libxcb1  # Necessary when built from source.
+openssh-server
+sudo
+tzdata
+zsh
+
+# Additional packages.
+at
+git
+nano
+parallel
+rsync
+tmux
+curl
+gedit
+
+# Needed for Mujoco. Taken from https://github.com/openai/mujoco-py/blob/master/Dockerfile
+libgl1-mesa-dev
+libgl1-mesa-glx
+libglew-dev
+libosmesa6-dev
+xvfb
+xpra
+xserver-xorg-dev
+mesa-utils
