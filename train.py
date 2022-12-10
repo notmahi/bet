@@ -23,7 +23,11 @@ class Workspace:
         self.work_dir = Path.cwd()
         print("Saving to {}".format(self.work_dir))
         self.cfg = cfg
-        self.device = torch.device(cfg.experiment.device) if torch.cuda.is_available() else torch.device("cpu")
+        self.device = (
+            torch.device(cfg.experiment.device)
+            if torch.cuda.is_available()
+            else torch.device("cpu")
+        )
         if self.cfg.experiment.data_parallel and self.device == torch.device("cpu"):
             raise ValueError("Data parallel is not supported on CPU")
         utils.set_seed_everywhere(cfg.experiment.seed)
@@ -145,7 +149,6 @@ class Workspace:
         with utils.eval_mode(
             self.obs_encoding_net, self.action_ae, self.state_prior, no_grad=True
         ):
-            loss_list = []
             for observations, action, mask in self.test_loader:
                 obs, act = observations.to(self.device), action.to(self.device)
                 enc_obs = self.obs_encoding_net(obs)
@@ -156,9 +159,6 @@ class Workspace:
                     return_loss_components=True,
                 )
                 self.log_append("prior_eval", len(observations), loss_components)
-                loss_list.append(loss.detach().cpu().numpy())
-            mean_loss = sum(loss_list) / len(loss_list)
-            return mean_loss
 
     def run(self):
         snapshot = self.snapshot
@@ -184,27 +184,42 @@ class Workspace:
             self.prior_epoch, self.cfg.experiment.num_prior_epochs
         )
         self.state_prior_iterator.set_description("Training prior: ")
-        # Reset the log.
+
+        # Initialize the log
         self.log_components = OrderedDict()
+
+        # Save initialized model values
+        self.eval_prior()
+        self.flush_log(epoch=0, iterator=self.state_prior_iterator)
+        log.info(f"Initialization - Current model test loss: {self.current_test_loss}")
+        self.best_model_test_loss = self.current_test_loss
         self.save_snapshot()
-        self.best_model_loss = self.eval_prior()
+        log.info(
+            f"Initialization - Saved new best model with test loss: {self.current_test_loss}"
+        )
+
         for epoch in self.state_prior_iterator:
             # Train
             self.prior_epoch = epoch
             self.train_prior_one_epoch()
             # Report
             if ((self.prior_epoch + 1) % self.cfg.experiment.eval_prior_every) == 0:
-                this_epoch_model_loss = self.eval_prior()
+                self.eval_prior()
                 self.flush_log(
-                    epoch=epoch + self.epoch, iterator=self.state_prior_iterator
+                    epoch=epoch + self.epoch + 1, iterator=self.state_prior_iterator
                 )
-                self.prior_epoch += 1
+            log.info(
+                f"Epoch {self.prior_epoch} - Current model test loss: {self.current_test_loss}"
+            )
+            # self.prior_epoch += 1 TODO: Delete?
             if (
                 (self.prior_epoch + 1) % self.cfg.experiment.save_prior_every
-            ) == 0 and this_epoch_model_loss < self.best_model_loss:
-
-                self.best_model_loss = this_epoch_model_loss
+            ) == 0 and self.current_test_loss < self.best_model_test_loss:
+                self.best_model_test_loss = self.current_test_loss
                 self.save_snapshot()
+                log.info(
+                    f"Epoch {self.prior_epoch} - Saved new best model with test loss: {self.current_test_loss}"
+                )
 
         # expose DataParallel module class name for wandb tags
         tag_func = (
@@ -269,6 +284,12 @@ class Workspace:
             logging.warning("Keys not found in snapshot: %s", not_in_payload)
 
     def log_append(self, log_key, length, loss_components):
+        """Store info about the different losses components.
+
+        It stores both the information from the training and the validation
+        loss, in 3 components: loss in the bin chosen (class), loss in the
+        offset and the total loss (sum of the previous two).
+        """
 
         for key, value in loss_components.items():
             # all the `key_name`s used:
@@ -288,10 +309,15 @@ class Workspace:
     def flush_log(self, epoch, iterator):
         log_components = OrderedDict()
         iterator_log_component = OrderedDict()
+        # Convert log components in average from tuple (count, sum)
         for key, value in self.log_components.items():
+            # Get the average for each
             count, sum = value
             to_log = sum / count
             log_components[key] = to_log
+            # Store current model loss
+            if key == "prior_eval/total":
+                self.current_test_loss = to_log
             # Set the iterator status
             log_key, name_key = key.split("/")
             iterator_log_name = f"{log_key[0]}{name_key[0]}".upper()
@@ -301,9 +327,10 @@ class Workspace:
             for key in iterator_log_component.keys()
         )
         iterator.set_postfix_str(postfix)
+        # Log to w&b
         wandb.log(log_components, step=epoch)
+        # Zero the log components
         self.log_components = OrderedDict()
-        # TODO: compare log components with actual loss (eval_prior) reported
 
 
 log = logging.getLogger(__name__)
@@ -312,24 +339,23 @@ OmegaConf.register_new_resolver("get_only_swept_params", get_only_swept_params)
 
 
 def run_cross_validation(cfg):
-    """"""
 
     cv_losses = []
     for cv_run_idx in range(cfg.experiment.num_cv_runs):
-        print(f"\n==== Starting cross-validation run: {cv_run_idx} ====")
+        log.info(f"==== Starting cross-validation run: {cv_run_idx} ====")
         # Change cfg for new cross-validation run
-        cfg.experiment.seed = cv_run_idx
         cfg.experiment.cv_run_idx = cv_run_idx
+        cfg.experiment.seed = cv_run_idx
         # Generate workspace (training)
         workspace = Workspace(cfg)
         workspace.run()
-        cv_losses.append(workspace.best_model_loss)
+        cv_losses.append(workspace.best_model_test_loss)
         log.info(
-            f"Cross-validation run: {cv_run_idx}\n"
-            f"Best model loss: {workspace.best_model_loss}\n"
+            f"Cross-validation run: {cv_run_idx}. "
+            f"Best model test loss: {workspace.best_model_test_loss}\n"
             f"Saved in {workspace.work_dir}"
         )
-        print(f"==== End of run {cv_run_idx}: {workspace.best_model_loss} ====\n")
+        log.info(f"==== End of run {cv_run_idx} ====\n")
 
     return cv_losses
 
@@ -338,7 +364,7 @@ def run_cross_validation(cfg):
 def main(cfg):
 
     # Uncomment line below to print cfg file being generated
-    # print(OmegaConf.to_yaml(cfg)
+    # print(OmegaConf.to_yaml(cfg))
 
     # Cross-validation
     cv_losses = run_cross_validation(cfg)
