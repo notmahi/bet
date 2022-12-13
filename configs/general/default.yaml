@@ -9,7 +9,7 @@ hydra:
   job:
     chdir: True   
   run:
-    dir: ./single_runs/${experiment.name}/${now:%Y.%m.%d-%H.%M.%S}
+    dir: ./eval_runs/${experiment.name}/${now:%Y.%m.%d-%H.%M.%S}
   sweep:
-    dir: ./sweeper_runs/${experiment.name}/${now:%Y.%m.%d-%H.%M.%S}
+    dir: ./train_runs/${experiment.name}/${now:%Y.%m.%d-%H.%M.%S}
     subdir: ${get_only_swept_params:}

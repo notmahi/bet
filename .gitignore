@@ -28,5 +28,5 @@ share/
 .idea/
 
 # Runs
-single_runs
-sweeper_runs
+train_runs
+eval_runs
