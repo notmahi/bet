@@ -167,7 +167,7 @@ Training
 python train.py env=blockpush experiment.num_prior_epochs=1 experiment.num_workers=1
 ```
 
-Evaluation. Replace `<date>/<eperiment_timestamp>` with the one you obtained after training.
+Evaluation. Replace `<date>/<experiment_timestamp>` with the one you obtained after training.
 
 ```bash
 python run_on_env.py env=blockpush experiment.num_eval_steps=10 experiment.num_eval_eps=1
@@ -183,12 +183,12 @@ Training
 python train.py env=kitchen experiment.num_prior_epochs=1 experiment.num_workers=1
 ```
 
-Evaluation. Replace `<date>/<eperiment_timestamp>` with the one you obtained after training.
+Evaluation. Replace `<date>/<experiment_timestamp>` with the one you obtained after training.
 
 ```bash
-python run_on_env.py --config-name=eval_kitchen \
-num_eval_steps=10 num_eval_eps=1 enable_render=False \
-load_dir=/opt/project/exp_local/<date>/<eperiment_timestamp>
+python run_on_env.py env=kitchen experiment.num_eval_steps=1 experiment.num_eval_eps=1
+model.load_dir=/train_dir/
+
 ```
 
 ## Reproducing The Figures
