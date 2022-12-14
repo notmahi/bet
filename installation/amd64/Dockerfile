@@ -521,7 +521,4 @@ ENV PYTHONPATH=$PYTHONPATH:${PROJECT_ROOT}/relay-policy-learning/adept_envs
 # BlockPush
 ENV ASSET_PATH=${PROJECT_ROOT}
 
-# Logging
-ENV WANDB_MODE=disabled
-
 CMD ["/bin/zsh"]

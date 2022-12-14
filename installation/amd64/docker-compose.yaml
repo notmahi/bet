@@ -84,6 +84,9 @@ services:
         UID: ${UID:-1000}
         GRP: ${GRP:-user}
         USR: ${USR:-user}
+    environment:
+      WANDB_MODE: ${WANDB_MODE:-disabled}
+      WANDB_API_KEY: ${WANDB_API_KEY}
     working_dir: ${PROJECT_ROOT:-/opt/project}
     user: ${UID:-1000}:${GID:-1000}
 

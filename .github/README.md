@@ -147,6 +147,23 @@ conda activate behavior-transformer
 
 ### Logging
 
+We track our experiments with [Weights and Biases](https://wandb.ai/site).
+To use it, either
+
+1. [Docker] Add your `wandb` [API key](https://wandb.ai/authorize) to the `.env` file
+    ```bash
+    WANDB_MODE=online
+    WANDB_API_KEY=<your_key>
+    ```
+   then `make up`.
+
+2. Or, run
+
+    ```bash
+    export WANDB_MODE=online && wandb login
+    ```
+   in the docker container, or you custom environment.
+
 ### Rendering
 
 ### Testing
