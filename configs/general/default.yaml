@@ -12,4 +12,6 @@ hydra:
     dir: ./eval_runs/${experiment.name}/${now:%Y.%m.%d-%H.%M.%S}
   sweep:
     dir: ./train_runs/${experiment.name}/${now:%Y.%m.%d-%H.%M.%S}
-    subdir: ${get_only_swept_params:}
+    subdir: ${hydra.job.num}
+    # subdir: ${hydra.job.override_dirname}  # Uncomment this line to name the run storing subdirectories after the overriden hyperparameters
+    # subdir: ${get_only_swept_params:}  # Uncomment this line to name the run storing subdirectories after the overriden hyperparameters, except the ones instantiated from the command line
