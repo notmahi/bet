@@ -82,7 +82,7 @@ start:  # Start a stopped service without recreating the container.
 down:  # Shut down the service and delete containers, volumes, networks, etc.
 	docker compose -p ${PROJECT} down
 run: check  # Used for debugging cases where the service will not start.
-	docker compose -p ${PROJECT} run ${SERVICE}
+	docker compose -p ${PROJECT} run ${SERVICE} ${COMMAND}
 ls:  # List all services.
 	docker compose ls -a
 

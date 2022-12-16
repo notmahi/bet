@@ -146,6 +146,12 @@ conda env create --file=installation/arm64/environment.yml
 conda activate behavior-transformer
 ```
 
+Set environment variables.
+```bash
+export PYTHONPATH=$PYTHONPATH:$(pwd)/relay-policy-learning/adept_envs
+export ASSET_PATH=$(pwd)
+```
+
 ### Logging
 
 We track our experiments with [Weights and Biases](https://wandb.ai/site).
@@ -171,42 +177,21 @@ To use it, either
 
 Test your setup by running the default training and evaluation scripts in each of the environments.
 
-TODO: @check with Manuel. make the default config do something minimal
-i.e. num workers 1, take the last training config.
-and the scripts below fo 1 step, 1 episode ....
+Environment values (`<env>` below) can be `blockpush` or `kitchen`.
 
-#### Point-Mass
-
-#### Block-Push
-
-Training
+Training.
 
 ```bash
-python train.py env=blockpush experiment.num_prior_epochs=1 experiment.num_workers=1
+python train.py env=<env> experiment.num_prior_epochs=1
 ```
 
-Evaluation. Replace `<date>/<experiment_timestamp>` with the one you obtained after training.
+Evaluation.
+Find the model you just trained in `train_runs/train_<env>/<date>/<job_id>`.
+Plug it in the command below.
 
 ```bash
-python run_on_env.py env=blockpush experiment.num_eval_steps=10 experiment.num_eval_eps=1
-model.load_dir=/train_dir/
-
-```
-
-#### Kitchen (Franka)
-
-Training
-
-```bash
-python train.py env=kitchen experiment.num_prior_epochs=1 experiment.num_workers=1
-```
-
-Evaluation. Replace `<date>/<experiment_timestamp>` with the one you obtained after training.
-
-```bash
-python run_on_env.py env=kitchen experiment.num_eval_steps=1 experiment.num_eval_eps=1
-model.load_dir=/train_dir/
-
+python run_on_env.py env=<env> experiment.num_eval_eps=1
+model.load_dir=$(pwd)/train_runs/train_<env>/<date>/<job_id>
 ```
 
 ## Reproducing The Figures
