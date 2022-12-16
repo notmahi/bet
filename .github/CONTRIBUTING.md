@@ -5,6 +5,11 @@
 black .
 ```
 
+## Create model weights archive
+```bash
+tar --exclude="*2022.12*" -czvf train_runs.tar.gz ./train_runs
+```
+
 ## Branching Convention
 - `original-paper`: tracks the original codebase. Read-only.
 - `main`: the main branch of this repository. 
