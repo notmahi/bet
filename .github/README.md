@@ -177,7 +177,11 @@ To use it, either
 
 ### Rendering
 
-TODO.
+Rendering is disabled by default.
+You can pass the `experiment.enable_render=True` flag to the evaluation script to enable it.
+A window with the rendering will open if you're running directly on your machine (e.g. MPS option),
+otherwise you'll need to follow the steps below to make it work on the Docker container.
+
 
 ### Testing
 
