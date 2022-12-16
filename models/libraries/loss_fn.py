@@ -11,6 +11,14 @@ def soft_cross_entropy(
     target: torch.Tensor,
 ) -> torch.Tensor:
     """
+    Computes the cross-entropy between two probabilities distributions.
+
+    Input should be in logits.
+    The difference to the typical crossentropy is that the target is assumed to
+    be a probability distribution over the several classes (every class has
+    some probability). Typical crossentropy assumes that only one class has all
+    the probability distribution (i.e., target has a one-hot representation).
+
     Args:
         input: (batch_size, num_classes): tensor of raw logits
         target: (batch_size, num_classes): tensor of class probability; sum(target) == 1

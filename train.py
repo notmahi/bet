@@ -85,8 +85,8 @@ class Workspace:
         if self.state_prior is None:  # possibly already initialized from snapshot
             self.state_prior = hydra.utils.instantiate(
                 self.cfg.model,
-                latent_dim=self.action_ae.latent_dim,
-                vocab_size=self.action_ae.num_latents,
+                latent_dim=self.action_ae.latent_dim,  # defined to 1
+                vocab_size=self.action_ae.num_latents,  # num bins
             ).to(self.device)
             if self.cfg.experiment.data_parallel:
                 self.state_prior = LatentGeneratorDataParallel(self.state_prior)

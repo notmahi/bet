@@ -82,9 +82,11 @@ class MinGPT(latent_generator.AbstractLatentGenerator):
         # We can just use the observation as the input and the next latent as the target.
         if self.predict_offsets:
             target_latents, target_offsets = target_latents
+
         is_soft_target = (target_latents.shape[-1] == self.vocab_size) and (
             self.vocab_size != 1
         )
+
         if is_soft_target:
             target_latents = target_latents.view(-1, target_latents.size(-1))
             criterion = soft_cross_entropy
@@ -136,6 +138,7 @@ class MinGPT(latent_generator.AbstractLatentGenerator):
             else:
                 return (logits, offsets), loss
         else:
+            # No loss for the offsets
             logits, _ = self.model(obs_rep)
             loss = criterion(logits.view(-1, logits.size(-1)), target_latents)
             logits = einops.rearrange(
