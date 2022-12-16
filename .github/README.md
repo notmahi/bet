@@ -39,11 +39,14 @@ git submodule update --init
 The datasets are stored in the `data` folder and are not tracked by `git`.
 
 1. Download the datasets [here](https://osf.io/download/4g53p/).
-2. Extract the datasets into the `data` folder with
+   ```bash
+   wget https://osf.io/download/4g53p/ -O ./data/bet_data_release.tar.gz
+   ```
+2. Extract the datasets into the `data/` folder.
 
-```bash
-tar -xvf bet_data_release.tar -C this_repo/data
-```
+   ```bash
+   tar -xvf data/bet_data_release.tar.gz -C data
+   ```
 
 The contents of the `data` folder should look like this:
 

@@ -2,7 +2,6 @@
 
 __pycache__
 *.pyc
-data
 .DS_Store
 
 
@@ -30,3 +29,7 @@ share/
 train_runs
 eval_runs
 train_runs.tar.gz
+
+# Data
+bet_data_release.tar.gz
+data/bet_data_release
