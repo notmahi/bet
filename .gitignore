@@ -15,7 +15,6 @@ data
 notebooks
 .ipynb_checkpoints
 *.ipynb
-wandb
 .DS_Store
 
 # conda env
@@ -30,3 +29,4 @@ share/
 # Runs
 train_runs
 eval_runs
+train_runs.tar.gz

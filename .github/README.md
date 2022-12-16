@@ -11,6 +11,7 @@ experiments.
 It is structures as follows:
 
 ## Table of Contents
+TODO: Add a table of contents.
 
 ## Getting Started
 
@@ -209,6 +210,22 @@ model.load_dir=/train_dir/
 ```
 
 ## Reproducing The Figures
+
+We provide model weights and their rollouts for all the experiments we ran.
+You can use these to reproduce our results.
+The scripts used to generate the models and rollouts and to get our figures can be found in `reproducibility_scripts/`
+
+Obtain the model weights with
+```bash
+wget https://www.dropbox.com/s/ehjeljuzt83kxcw/train_runs.tar.gz
+tar --skip-old-files -xvf train_runs.tar.gz   # This does not override what you already have in train_runs/
+```
+
+TODO: Obtain the rollouts with
+```bash
+wget 
+tar --skip-old-files -xvf 
+```
 
 ## More Experiments
 
