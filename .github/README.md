@@ -22,6 +22,7 @@ TODO: Add a table of contents.
 Clone the dataset with its submodules.
 We track [Relay Policy Learning](https://github.com/google-research/relay-policy-learning) repo as a submodule for the
 Franka kitchen environment.
+It uses [`git-lfs`](https://git-lfs.github.com/). Make sure you have it installed.
 
 ```bash
 git clone --recurse-submodules
