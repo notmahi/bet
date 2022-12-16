@@ -1,0 +1,4 @@
+# To train
+python train.py env=kitchen experiment.num_cv_runs=3 experiment.window_size=1,5,10,20
+
+# To evaluate
