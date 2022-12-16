@@ -153,6 +153,7 @@ Set environment variables.
 ```bash
 export PYTHONPATH=$PYTHONPATH:$(pwd)/relay-policy-learning/adept_envs
 export ASSET_PATH=$(pwd)
+export PYTHONDONTWRITEBYTECODE=1
 ```
 
 ### Logging
@@ -172,9 +173,11 @@ To use it, either
     ```bash
     export WANDB_MODE=online && wandb login
     ```
-   in the docker container, or you custom environment.
+   in the docker container, or in your custom environment.
 
 ### Rendering
+
+TODO.
 
 ### Testing
 
@@ -193,7 +196,7 @@ Find the model you just trained in `train_runs/train_<env>/<date>/<job_id>`.
 Plug it in the command below.
 
 ```bash
-python run_on_env.py env=<env> experiment.num_eval_eps=1
+python run_on_env.py env=<env> experiment.num_eval_eps=1 \
 model.load_dir=$(pwd)/train_runs/train_<env>/<date>/<job_id>
 ```
 
@@ -206,7 +209,7 @@ The scripts used to generate the models and rollouts and to get our figures can 
 Obtain the model weights with
 ```bash
 wget https://www.dropbox.com/s/ehjeljuzt83kxcw/train_runs.tar.gz
-tar --skip-old-files -xvf train_runs.tar.gz   # This does not override what you already have in train_runs/
+tar -xvf train_runs.tar.gz
 ```
 
 TODO: Obtain the rollouts with
