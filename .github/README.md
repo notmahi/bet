@@ -58,11 +58,11 @@ We provide installation methods to meet different systems.
 The methods aim to insure easiness of use, portability, and reproducibility thanks to Docker.
 It is hard to cover all systems, so we focused on the main ones.
 
-A. **amd64 with CUDA:** for machines with Nvidia GPUs with Intel CPUs.
-B. **amd 64 CPU-only:** for machines with Intel CPUs.
-C. **arm64 with MPS:** to leverage the M1 GPU of Apple machines.
+- A: **amd64 with CUDA:** for machines with Nvidia GPUs with Intel CPUs.
+- B: **amd 64 CPU-only:** for machines with Intel CPUs.
+- C: **arm64 with MPS:** to leverage the M1 GPU of Apple machines.
 
-#### A&B. amd64 (CUDA and CPU-only)
+#### A&B: amd64 (CUDA and CPU-only)
 
 This installation method is adapted from the [Cresset initiative](https://github.com/cresset-template/cresset).
 Refer to the Cresset repository for more details.
@@ -76,7 +76,6 @@ To check if you have each of them run `<command-name> --version` or `<command-na
 * [`docker`](https://docs.docker.com/get-docker/). (v20.10+)
 * [`docker compose`](https://docs.docker.com/compose/install/) (V2)
 * [CUDA] [Nvidia CUDA Driver](https://www.nvidia.com/download/index.aspx) (Only the driver. No CUDA toolkit, etc)
-* [CUDA] [`nvidia-docker`](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#docker)
 
 **Installation**
 
@@ -92,7 +91,7 @@ Run
 make env
 ```
 
-A `.env` file will be created in the installation directory. You need to edit it according to the following needs:
+The `.env` file will be created in the installation directory. You need to edit it according to the following needs:
 
 [CUDA] If you are using an old Nvidia GPU (i.e. [capability](https://developer.nvidia.com/cuda-gpus#compute)) < 3.7) you
 need to compile PyTorch from source.
@@ -133,7 +132,7 @@ To run multiple instances of the container you can use
 make run
 ```
 
-#### C. MPS
+#### C: MPS (Apple silicon)
 
 As the MPS backend isn't supported on PyTorch on Docker, this methods relies on a local installation of `conda`, thus
 unfortunately limiting portability and reproducibility.
@@ -146,7 +145,7 @@ We provide an `environment.yml` file adapted from the BeT's author's repo to be 
 **Installation**
 
 ```bash
-conda env create --file=installation/arm64/environment.yml
+conda env create --file=installation/osx-arm64/environment.yml
 conda activate behavior-transformer
 ```
 
