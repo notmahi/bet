@@ -219,7 +219,7 @@ tar -xvf train_runs.tar.gz
 TODO: Obtain the rollouts with
 ```bash
 wget 
-tar --skip-old-files -xvf 
+tar -xvf 
 ```
 
 ## More Experiments
