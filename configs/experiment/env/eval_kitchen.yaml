@@ -3,7 +3,7 @@
 experiment:
 
   # Length of history
-  window_size: 3
+  window_size: 10
 
   # Environment running setup
   num_eval_eps: 100

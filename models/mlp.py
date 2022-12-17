@@ -11,11 +11,18 @@ def mlp(
     batchnorm=False,
     activation=nn.ReLU,
 ):
+    # It needs to flatten the observations (but keep the batch size dimension, 0, as is)
+    mods = [nn.Flatten(1, -1)]
+
+    # 1st layer
     if hidden_depth == 0:
-        mods = [nn.Linear(input_dim, output_dim)]
+        mods += [nn.Linear(input_dim, output_dim)]
     else:
-        mods = (
-            [nn.Linear(input_dim, hidden_dim), activation(inplace=True)]
+        mods += (
+            [
+                nn.Linear(input_dim, hidden_dim),
+                activation(inplace=True),
+            ]
             if not batchnorm
             else [
                 nn.Linear(input_dim, hidden_dim),
@@ -23,9 +30,13 @@ def mlp(
                 activation(inplace=True),
             ]
         )
+        # Hidden layers
         for _ in range(hidden_depth - 1):
             mods += (
-                [nn.Linear(hidden_dim, hidden_dim), activation(inplace=True)]
+                [
+                    nn.Linear(hidden_dim, hidden_dim),
+                    activation(inplace=True),
+                ]
                 if not batchnorm
                 else [
                     nn.Linear(hidden_dim, hidden_dim),
@@ -33,10 +44,14 @@ def mlp(
                     activation(inplace=True),
                 ]
             )
+        # Final layer
         mods.append(nn.Linear(hidden_dim, output_dim))
     if output_mod is not None:
         mods.append(output_mod)
+
     trunk = nn.Sequential(*mods)
+    print("MLP Architecture: \n", trunk)
+
     return trunk
 
 
