@@ -10,37 +10,6 @@ register(
 )
 
 try:
-    import carla
-
-    register(
-        id="carla-multipath-split-v0",
-        entry_point="envs.carla.v0:CarlaMultipathSplitV0",
-        max_episode_steps=1500,
-        reward_threshold=1.0,
-    )
-    register(
-        id="carla-multipath-town10-merge-v0",
-        entry_point="envs.carla.v0:CarlaMultipathTown10MergeV0",
-        max_episode_steps=1500,
-        reward_threshold=1.0,
-    )
-    register(
-        id="carla-multipath-town04-merge-v0",
-        entry_point="envs.carla.v0:CarlaMultipathTown04MergeV0",
-        max_episode_steps=1500,
-        reward_threshold=1.0,
-    )
-    register(
-        id="carla-multipath-state-v0",
-        entry_point="envs.carla.state_v0:CarlaMultipathStateEnvV0",
-        max_episode_steps=1500,
-        reward_threshold=1.0,
-    )
-except ImportError:
-    logging.warning("Carla not installed, skipping")
-    pass
-
-try:
     import adept_envs
 
     register(
