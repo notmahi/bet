@@ -212,7 +212,7 @@ The scripts used to generate the models and rollouts and to get our figures can 
 
 Obtain the model weights with
 ```bash
-wget https://www.dropbox.com/s/ehjeljuzt83kxcw/train_runs.tar.gz
+wget https://www.dropbox.com/s/6qjxw44r547b79w/train_runs.tar.gz
 tar -xvf train_runs.tar.gz
 ```
 
