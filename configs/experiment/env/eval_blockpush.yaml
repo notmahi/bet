@@ -11,3 +11,6 @@ experiment:
   action_update_every: 1
   flatten_obs: True
   enable_render: False
+  vectorized_env: False
+  async_envs: False
+  num_envs: 2

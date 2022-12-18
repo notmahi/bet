@@ -6,9 +6,10 @@ from pathlib import Path
 import hydra
 import numpy as np
 
+from workspaces.vec_base import VecWorkspace
+
 
 def run_evaluations(cfg):
-
     cv_run_idxs = process_cv_run_idxs(cfg)
     for cv_run_idx in cv_run_idxs:
         log.info(f"==== Starting evaluation for snapshot_{cv_run_idx} ====")
@@ -38,9 +39,16 @@ def process_cv_run_idxs(cfg):
 
 
 def run_snapshot(cfg):
-    # Needs _recursive_: False since we have more objects within that we are instantiating
-    # without using nested instantiation from hydra
-    workspace = hydra.utils.instantiate(cfg.env.workspace, cfg=cfg, _recursive_=False)
+    if cfg.experiment.vectorized_env:
+        # This workspace does not support all the features in the non-vectorized workspaces.
+        # It's unique purpose is  generate rollouts quickly.
+        workspace = VecWorkspace(cfg)
+    else:
+        # Needs _recursive_: False since we have more objects within that we are instantiating
+        # without using nested instantiation from hydra
+        workspace = hydra.utils.instantiate(
+            cfg.env.workspace, cfg=cfg, _recursive_=False
+        )
     rewards, infos = workspace.run()
     print(rewards)
     print(infos)

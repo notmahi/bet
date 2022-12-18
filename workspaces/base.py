@@ -35,14 +35,6 @@ class Workspace:
             raise ValueError("Data parallel is not supported on CPU")
         utils.set_seed_everywhere(cfg.experiment.seed)
 
-        self.env = gym.make(cfg.env.gym_name)
-        if cfg.experiment.record_video:
-            self.env = RecordVideo(
-                self.env,
-                video_folder=self.work_dir,
-                episode_trigger=lambda x: x % 1 == 0,
-            )
-
         # Create the model
         self.action_ae = None
         self.obs_encoding_net = None
@@ -79,6 +71,17 @@ class Workspace:
         # Set up history archival.
         self.history = deque(maxlen=self.window_size)
         self.last_latents = None
+
+        self.init_env()
+
+    def init_env(self):
+        self.env = gym.make(self.cfg.env.gym_name)
+        if self.cfg.experiment.record_video:
+            self.env = RecordVideo(
+                self.env,
+                video_folder=self.work_dir,
+                episode_trigger=lambda x: x % 1 == 0,
+            )
 
         if self.cfg.experiment.flatten_obs:
             self.env = gym.wrappers.FlattenObservation(self.env)
@@ -134,6 +137,7 @@ class Workspace:
         obs_history = []
         action_history = []
         latent_history = []
+        self.history = deque(maxlen=self.window_size)
         obs = self.env.reset()
         last_obs = obs
         if self.cfg.experiment.start_from_seen:
@@ -176,15 +180,19 @@ class Workspace:
         print(obs, chosen_action, done)
         raise NotImplementedError
 
+    def _prepare_obs(self, obs):
+        obs = torch.from_numpy(obs).float().to(self.device).unsqueeze(0)
+        enc_obs = self.obs_encoding_net(obs).squeeze(0)
+        enc_obs = einops.repeat(
+            enc_obs, "obs -> batch obs", batch=self.cfg.experiment.action_batch_size
+        )
+        return enc_obs
+
     def _get_action(self, obs, sample=False, keep_last_bins=False):
         with utils.eval_mode(
             self.action_ae, self.obs_encoding_net, self.state_prior, no_grad=True
         ):
-            obs = torch.from_numpy(obs).float().to(self.device).unsqueeze(0)
-            enc_obs = self.obs_encoding_net(obs).squeeze(0)
-            enc_obs = einops.repeat(
-                enc_obs, "obs -> batch obs", batch=self.cfg.experiment.action_batch_size
-            )
+            enc_obs = self._prepare_obs(obs)
             # Now, add to history. This automatically handles the case where
             # the history is full.
             self.history.append(enc_obs)
