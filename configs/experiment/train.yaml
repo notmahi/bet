@@ -14,3 +14,4 @@ save_every: 1
 # Cross-validation
 num_cv_runs: 2
 cv_run_idx: ???
+save_subdir: ${now:%Y.%m.%d-%H.%M.%S}

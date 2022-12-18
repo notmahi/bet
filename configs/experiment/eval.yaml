@@ -9,3 +9,4 @@ start_from_seen: False
 record_video: False
 cv_run_idx: all
 data_parallel: False
+save_subdir: ${now:%Y.%m.%d-%H.%M.%S}
