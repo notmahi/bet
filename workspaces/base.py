@@ -1,6 +1,7 @@
 import logging
 from collections import deque
 from pathlib import Path
+import os
 
 import einops
 import gym
@@ -12,18 +13,27 @@ from models.action_ae.generators.base import GeneratorDataParallel
 from models.latent_generators.latent_generator import LatentGeneratorDataParallel
 import utils
 import wandb
+from omegaconf import OmegaConf
 
 
 class Workspace:
     def __init__(self, cfg):
-        self.work_dir = Path.cwd()
+
+        self.work_dir = os.path.join(
+            Path.cwd(), f"snapshot_{cfg.experiment.cv_run_idx}"
+        )
+        os.makedirs(self.work_dir)
         print("Working directory: {}".format(self.work_dir))
+
         self.cfg = cfg
-        self.device = torch.device(cfg.experiment.device) if torch.cuda.is_available() else torch.device("cpu")
+        self.device = (
+            torch.device(cfg.experiment.device)
+            if torch.cuda.is_available()
+            else torch.device("cpu")
+        )
         if self.cfg.experiment.data_parallel and self.device == torch.device("cpu"):
             raise ValueError("Data parallel is not supported on CPU")
         utils.set_seed_everywhere(cfg.experiment.seed)
-        self.helper_procs = []
 
         self.env = gym.make(cfg.env.gym_name)
         if cfg.experiment.record_video:
@@ -42,7 +52,21 @@ class Workspace:
             self._init_obs_encoding_net()
             self._init_state_prior()
 
-        wandb.init(dir=self.work_dir, project=cfg.project, config=cfg._content)
+        # Log in wandb
+        wandb.init(
+            dir=self.work_dir,
+            project=cfg.project,
+            config=OmegaConf.to_container(cfg, resolve=True),
+            reinit=True,
+        )
+        wandb.config.update({"save_path": self.work_dir})
+        # Add to eval config the config from the training model
+        train_config_path = os.path.join(cfg.model.load_dir, ".hydra", "config.yaml")
+        train_config = OmegaConf.load(train_config_path)
+        wandb.config.update(
+            {"train_config": OmegaConf.to_container(train_config, resolve=True)}
+        )
+
         self.epoch = 0
         self.load_snapshot()
 
@@ -223,8 +247,8 @@ class Workspace:
             reward, obses, actions, latents, info = self.run_single_episode()
             rewards.append(reward)
             infos.append(info)
-            torch.save(actions, Path.cwd() / f"actions_{i}.pth")
-            torch.save(latents, Path.cwd() / f"latents_{i}.pth")
+            torch.save(actions, os.path.join(self.work_dir, f"actions_{i}.pth"))
+            torch.save(latents, os.path.join(self.work_dir, f"latents_{i}.pth"))
         self.env.close()
         logging.info(rewards)
         logging.info(infos)

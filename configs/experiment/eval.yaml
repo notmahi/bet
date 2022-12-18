@@ -7,6 +7,5 @@ seed: 42
 plot_interactions: False
 start_from_seen: False
 record_video: False
-cv_run_idx: 0
+cv_run_idx: all
 data_parallel: False
-
