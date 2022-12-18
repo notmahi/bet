@@ -70,8 +70,13 @@ class Workspace:
         self.epoch = 0
         self.load_snapshot()
 
+        # Define window-size to the one of the trained model by default, unless otherwise stated
+        if cfg.experiment.window_size == "same":
+            self.window_size = train_config.experiment.window_size
+        else:
+            self.window_size = cfg.experiment.window_size
+        print(f"window_size: {self.window_size}")
         # Set up history archival.
-        self.window_size = cfg.experiment.window_size
         self.history = deque(maxlen=self.window_size)
         self.last_latents = None
 

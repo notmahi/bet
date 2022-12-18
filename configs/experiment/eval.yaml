@@ -10,3 +10,6 @@ record_video: False
 cv_run_idx: all
 data_parallel: False
 save_subdir: ${now:%Y.%m.%d-%H.%M.%S}
+
+# Length of history
+window_size: same

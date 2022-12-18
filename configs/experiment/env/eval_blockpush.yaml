@@ -2,9 +2,6 @@
 
 experiment:
 
-  # Length of history
-  window_size: 5
-
   # Environment running setup
   num_eval_eps: 100
   action_batch_size: 1
