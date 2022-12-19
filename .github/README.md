@@ -158,6 +158,7 @@ Set environment variables.
 export PYTHONPATH=$PYTHONPATH:$(pwd)/relay-policy-learning/adept_envs
 export ASSET_PATH=$(pwd)
 export PYTHONDONTWRITEBYTECODE=1
+export HYDRA_FULL_ERROR=1
 ```
 
 ### Logging

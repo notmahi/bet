@@ -19,7 +19,6 @@ import wandb
 
 class Workspace:
     def __init__(self, cfg):
-
         self.work_dir = Path.cwd()
         print("Saving to {}".format(self.work_dir))
         self.cfg = cfg
@@ -40,7 +39,7 @@ class Workspace:
         self.train_set, self.test_set = self.dataset
         self._setup_loaders()
 
-        # Create the model
+        # Create the model.
         self.action_ae = None
         self.obs_encoding_net = None
         self.state_prior = None
@@ -177,7 +176,7 @@ class Workspace:
         if self.cfg.experiment.save_latents:
             self.save_latents()
 
-        # Train the action prior model
+        # Train the action prior model.
         if self.cfg.experiment.lazy_init_models:
             self._init_state_prior()
         self.state_prior_iterator = tqdm.trange(
@@ -185,10 +184,10 @@ class Workspace:
         )
         self.state_prior_iterator.set_description("Training prior: ")
 
-        # Initialize the log
+        # Initialize the log.
         self.log_components = OrderedDict()
 
-        # Save initialized model values
+        # Save initialized model values.
         self.eval_prior()
         self.flush_log(epoch=0, iterator=self.state_prior_iterator)
         log.info(f"Initialization - Current model test loss: {self.current_test_loss}")
@@ -221,7 +220,7 @@ class Workspace:
                     f"Epoch {self.prior_epoch} - Saved new best model with test loss: {self.current_test_loss}"
                 )
 
-        # expose DataParallel module class name for wandb tags
+        # Expose DataParallel module class name for wandb tags.
         tag_func = (
             lambda m: m.module.__class__.__name__
             if self.cfg.experiment.data_parallel
@@ -339,14 +338,17 @@ OmegaConf.register_new_resolver("get_only_swept_params", get_only_swept_params)
 
 
 def run_cross_validation(cfg):
-
+    """
+    Run cross validation for the given config.
+    cv stands for cross validation.
+    """
     cv_losses = []
     for cv_run_idx in range(cfg.experiment.num_cv_runs):
         log.info(f"==== Starting cross-validation run: {cv_run_idx} ====")
-        # Change cfg for new cross-validation run
+        # Change cfg for new cross-validation run.
         cfg.experiment.cv_run_idx = cv_run_idx
         cfg.experiment.seed = cv_run_idx
-        # Generate workspace (training)
+        # Generate workspace (training).
         workspace = Workspace(cfg)
         workspace.run()
         cv_losses.append(workspace.best_model_test_loss)
@@ -362,14 +364,16 @@ def run_cross_validation(cfg):
 
 @hydra.main(version_base="1.2", config_path="configs", config_name="config_train")
 def main(cfg):
-
-    # Uncomment line below to print cfg file being generated
-    # print(OmegaConf.to_yaml(cfg))
-
-    # Cross-validation
+    """
+    Runs training with the given configuration.
+    Performs cross-validation with cfg.experiment.num_cv_runs.
+    Saves the best model of each cross-validation run.
+    Returns the average test loss of the best model over the cross-validation runs.
+    """
+    # Run training with multiple seeds and save the best model for each run.
     cv_losses = run_cross_validation(cfg)
 
-    # Getting performance metric for the combination of hyperparameters used
+    # Average performance across cross-validation runs on test set.
     objective = sum(cv_losses) / len(cv_losses)
     log.info(f"Mean test loss across cross-validation runs: {objective}")
     return objective

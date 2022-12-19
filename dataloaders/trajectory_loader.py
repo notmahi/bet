@@ -1,9 +1,7 @@
 import logging
-import einops
 import os
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 from torch.utils.data import TensorDataset, Dataset
 from pathlib import Path
 import numpy as np
@@ -429,7 +427,6 @@ def get_relay_kitchen_train_val(
     device="cpu",
     window_size=10,
 ):
-
     relay_kitchen_trajectories = RelayKitchenTrajectoryDataset(data_directory)
     train_set, val_set = split_datasets(
         relay_kitchen_trajectories,
