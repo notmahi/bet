@@ -51,7 +51,9 @@ The datasets are stored in the `data` folder and are not tracked by `git`.
 
 The contents of the `data` folder should look like this:
 
+* `bet_data_release.tar.gz`: The archive just downloaded.
 * `data/bet_data_release`: contains the datasets released by the paper authors.
+* `README.md`: A placeholder.
 
 ### Environment
 
