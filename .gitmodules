@@ -1,3 +1,4 @@
 [submodule "relay-policy-learning"]
 	path = relay-policy-learning
-	url = https://github.com/google-research/relay-policy-learning
+	url = https://github.com/skandermoalla/relay-policy-learning.git
+	branch = fixes
