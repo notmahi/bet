@@ -171,7 +171,7 @@ To use it, either
     WANDB_MODE=online
     WANDB_API_KEY=<your_key>
     ```
-   then `make up SERVICE=<cpu|cuda>`.
+   then `make up`.
 
 2. Or, run
 
