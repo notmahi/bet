@@ -76,7 +76,7 @@ Steps prefixed with [CUDA] are only required for the CUDA option.
 To check if you have each of them run `<command-name> --version` or `<command-name> version` in the terminal.
 
 * [`make`](https://cmake.org/install/).
-* [`docker`](https://docs.docker.com/get-docker/). (v20.10+)
+* [`docker`](https://docs.docker.com/engine/). (v20.10+)
 * [`docker compose`](https://docs.docker.com/compose/install/) (V2)
 * [CUDA] [Nvidia CUDA Driver](https://www.nvidia.com/download/index.aspx) (Only the driver. No CUDA toolkit, etc)
 * [CUDA] [`nvidia-docker`](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#docker) (the NVIDIA Container Toolkit).
