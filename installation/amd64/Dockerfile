@@ -1,70 +1,24 @@
 # syntax = docker/dockerfile:1.4
 # The top line is used by BuildKit. _**DO NOT ERASE IT**_.
-
-# Use `export BUILDKIT_PROGRESS=plain` in the host terminal to see full build logs.
-
-# Visit the following URL for available BuildKit syntax versions.
-# https://hub.docker.com/r/docker/dockerfile
-
-# See the link below for documentation on BuildKit syntax.
-# https://github.com/moby/buildkit/blob/master/frontend/dockerfile/docs/reference.md
-
-# This image uses multi-stage builds. See the link below for a detailed description.
-# https://docs.docker.com/develop/develop-images/multistage-build
-# The build process is similar to a neural network with complicated control flow.
-# The `stages` are like blocks in the network, with control flow implemented
-# by the names of arguments and stages.
-
-# Use `export BUILDKIT_PROGRESS=plain` to see full outputs during debugging.
-
-# All `ARG` variables must be redefined for every stage,
-# `ARG`s defined before `FROM` transfer their values to layers that redefine them.
-# `ENV` and `LABEL` variables are inherited only by child stages.
-# See https://docs.docker.com/engine/reference/builder on how to write Dockerfiles and
-# https://docs.docker.com/develop/develop-images/dockerfile_best-practices for best practices.
-# See https://hub.docker.com/r/nvidia/cuda for all available CUDA images.
-
-# Note that the CUDA 11+ now uses semantic versioning.
-# Until CUDA 10.2, there are only the major and minor version numbers.
-# From CUDA 11.0.0 onwards, the major, minor, and patch versions are included.
-# A CUDA version such as `11.2` is therefore invalid.
-# Users must specify the full version, e.g., `11.2.2`.
-
 ARG BUILD_MODE
 ARG USE_CUDA
 ARG USE_PRECOMPILED_HEADERS=1
-ARG CONDA_MANAGER=mamba
 ARG MKL_MODE
 ARG CUDA_VERSION=11.7.1
 ARG CUDNN_VERSION=8
-ARG PYTHON_VERSION=3.10
+ARG PYTHON_VERSION=3.8
 ARG LINUX_DISTRO=ubuntu
-ARG DISTRO_VERSION=22.04
+ARG DISTRO_VERSION=20.04
 ARG TORCH_CUDA_ARCH_LIST
 ARG BUILD_IMAGE=nvidia/cuda:${CUDA_VERSION}-cudnn${CUDNN_VERSION}-devel-${LINUX_DISTRO}${DISTRO_VERSION}
 ARG TRAIN_IMAGE=nvidia/cuda:${CUDA_VERSION}-cudnn${CUDNN_VERSION}-devel-${LINUX_DISTRO}${DISTRO_VERSION}
-ARG DEPLOY_IMAGE=nvidia/cuda:${CUDA_VERSION}-cudnn${CUDNN_VERSION}-runtime-${LINUX_DISTRO}${DISTRO_VERSION}
 
-# Build-related packages are pre-installed on CUDA `devel` images.
-# Only the `cURL` package is downloaded from the package manager.
-# The only use of cURL is to download Miniconda.
 ########################################################################
 FROM ${BUILD_IMAGE} AS install-ubuntu
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        curl && \
+        curl \
+        git && \
     rm -rf /var/lib/apt/lists/*
-
-########################################################################
-FROM ${BUILD_IMAGE} AS install-centos
-RUN yum -y install curl && yum -y clean all && rm -rf /var/cache
-
-########################################################################
-FROM ${BUILD_IMAGE} AS install-ubi
-RUN yum -y install curl && yum -y clean all && rm -rf /var/cache
-
-########################################################################
-FROM ${BUILD_IMAGE} AS install-rockylinux
-RUN yum -y install curl && yum -y clean all && rm -rf /var/cache
 
 ########################################################################
 FROM install-${LINUX_DISTRO} AS install-base
@@ -73,27 +27,13 @@ LABEL maintainer=veritas9872@gmail.com
 ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
 
-# Python won’t try to write .pyc or .pyo files on the import of source modules.
 ENV PYTHONDONTWRITEBYTECODE=1
-# Force stdin, stdout and stderr to be totally unbuffered. Good for logging.
 ENV PYTHONUNBUFFERED=1
-# Allows UTF-8 characters as outputs in Docker.
 ENV PYTHONIOENCODING=UTF-8
-
-# Conda always uses the specified version of Python, regardless of Miniconda version.
-# Use a different conda URL for a different CPU architecture or specific version.
-# The Anaconda `defaults` channel is no longer free for commercial use.
-# Miniconda itself is still open-source.
-# Removing `defaults` channel as a result. Viva la Open Source!
-# https://conda.io/en/latest/license.html
-# https://www.anaconda.com/terms-of-service
-# https://www.anaconda.com/end-user-license-agreement-miniconda
 ARG MKL_MODE
 ARG PYTHON_VERSION
-# Conda packages have higher priority than system packages during the build.
 ENV PATH=/opt/conda/bin:${PATH}
 # Available Miniconda installations: https://docs.conda.io/en/latest/miniconda.html
-# Cannot set strict channel priority because of installation conflicts.
 ARG CONDA_URL=https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
 RUN curl -fsSL -v -o /tmp/miniconda.sh -O ${CONDA_URL} && \
     chmod +x /tmp/miniconda.sh && \
@@ -112,35 +52,15 @@ COPY --link reqs/conda-build.requirements.txt /tmp/conda/build-requirements.txt
 ENV conda=/opt/conda/bin/conda
 
 ########################################################################
-FROM install-conda AS install-mamba
+FROM install-conda AS install-include-mkl
 
-# Using Mamba instead of Conda as the package manager for faster installation.
-RUN conda install -y mamba && conda clean -ya
-ENV conda=/opt/conda/bin/mamba
-
-########################################################################
-FROM install-${CONDA_MANAGER} AS install-include-mkl
-
-# The `CONDA_MANAGER` variable may be either `mamba` (the default) or `conda`.
-# Mamba is a faster reimplementation of conda in C++.
-# However, there are occasions where mamba is unable to
-# resolve conflicts that conda can resolve.
-# In such cases, set `CONDA_MANAGER=conda` for conda-based installation.
-
-# Conda packages are preferable to system packages because they
-# are much more likely to be the latest (and the greatest!) packages.
-# Use fixed version numbers if versioning issues cause build failures.
-# `sed 's/\.//; s/\..*//'` extracts `magma` versions from CUDA versions.
-# For example, 11.5.1 becomes 115 and 10.2 becomes 102.
-# Using the MatchSpec syntax for the magma-cuda package,
-# which is only available from the PyTorch channel.
-# All other packages should come from the conda-forge channel.
+ARG MKL_VERSION=2022.2.1
 ARG CUDA_VERSION
 RUN $conda install -y \
         --file /tmp/conda/build-requirements.txt \
         pytorch::magma-cuda$(echo ${CUDA_VERSION} | sed 's/\.//; s/\..*//') \
-        mkl-include \
-        mkl && \
+        mkl-include==${MKL_VERSION} \
+        mkl==${MKL_VERSION} && \
     conda clean -ya
 
 # Enable Intel MKL optimizations on AMD CPUs.
@@ -158,14 +78,6 @@ ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so:${LD_PRELOAD}
 ########################################################################
 FROM install-conda AS install-exclude-mkl
 
-# The Intel(R) Math Kernel Library (MKL) places some restrictions on its use,
-# though there are no restrictions on commercial use.
-# See the Intel(R) Simplified Software License (ISSL) for details.
-# Other Intel software such as the Intel OpenMP^* Runtime Library (iomp)
-# are licensed under the Intel End User License Agreement for Developer Tools.
-# See URL below for Intel licenses & EULAs.
-# https://www.intel.com/content/www/us/en/developer/articles/license/end-user-license-agreement.html
-# Also, non-Intel CPUs may face slowdowns if MKL is used in the backend.
 ARG CUDA_VERSION
 RUN $conda install -y \
         --file /tmp/conda/build-requirements.txt \
@@ -177,20 +89,11 @@ RUN $conda install -y \
 FROM install-${MKL_MODE}-mkl AS build-base
 # `build-base` is the base stage for all builds in the Dockerfile.
 
-# Use Jemalloc as the system memory allocator for efficient memory management.
 ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so:$LD_PRELOAD
 # See the documentation for an explanation of the following configuration.
 # https://android.googlesource.com/platform/external/jemalloc_new/+/6e6a93170475c05ebddbaf3f0df6add65ba19f01/TUNING.md
 ENV MALLOC_CONF=background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,muzzy_decay_ms:30000
 
-# The Docker Daemon cache memory may be insufficient to hold the entire cache.
-# A small Garbage Collection (GC) `defaultKeepStorage` value may slow builds
-# by removing the caches of previous builds, forcing the compiler to recompile.
-# The default GC size is often smaller than the compiler cache size of PyTorch.
-# To configure GC settings, edit the Docker Daemon configuration JSON file.
-# This is available in Settings -> Docker Engine on Docker Desktop for Windows.
-# https://docs.docker.com/engine/reference/commandline/dockerd/#daemon-configuration-file
-# https://github.com/docker/cli/issues/2325
 WORKDIR /opt/ccache
 ENV PATH=/opt/conda/bin/ccache:$PATH
 # Enable `ccache` with unlimited memory size for faster builds.
@@ -239,46 +142,6 @@ RUN --mount=type=cache,target=/opt/ccache \
     python setup.py bdist_wheel -d /tmp/dist && \
     python setup.py install
 
-###### Additional information for custom builds. ######
-
-# Use the following to build with custom CMake settings.
-#RUN --mount=type=cache,target=/opt/ccache \
-#    python setup.py build --cmake-only && \
-#    ccmake build  # or cmake-gui build
-
-# See the SetupTools documentation for more setup.py options.
-# https://setuptools.pypa.io/en/latest
-
-# C++ developers using Libtoch can find the library in `torch/lib/tmp_install/lib/libtorch.so`.
-
-# The default configuration removes all files except requirements files from the Docker context.
-# To `COPY` your source files during the build, please edit the `.dockerignore` file.
-
-# A detailed (if out of date) explanation of the buildsystem can be found below.
-# https://pytorch.org/blog/a-tour-of-pytorch-internals-2
-# The following repository may also be helpful for available options and possible issues.
-# https://github.com/mratsim/Arch-Data-Science/blob/master/frameworks/python-pytorch-magma-mkldnn-cudnn-git/PKGBUILD
-
-# Manually specify conda package versions if older PyTorch versions will not build.
-# PyYAML, MKL-DNN, and SetupTools are known culprits.
-
-# Run the command below before building to enable ROCM builds.
-# RUN python tools/amd_build/build_amd.py
-# PyTorch builds with ROCM has not been tested.
-# Note that PyTorch for ROCM is still in beta and the ROCM build API may change.
-
-# To build for Jetson Nano devices, see the link below for the necessary modifications.
-# https://forums.developer.nvidia.com/t/pytorch-for-jetson-version-1-10-now-available/72048
-
-########################################################################
-FROM build-base AS build-pillow
-# Specify the version of `Pillow-SIMD` if necessary. Variable is not used yet.
-# Condition ensures that AVX2 instructions are built only if available.
-ARG PILLOW_SIMD_VERSION
-RUN if [ -n "$(lscpu | grep avx2)" ]; then CC="cc -mavx2"; fi && \
-    python -m pip wheel --no-deps --wheel-dir /tmp/dist \
-        Pillow-SIMD  # ==${PILLOW_SIMD_VERSION}
-
 ########################################################################
 FROM build-torch AS build-vision
 
@@ -289,12 +152,6 @@ RUN git clone --jobs 0 --depth 1 --single-branch --shallow-submodules \
         --recurse-submodules --branch ${TORCHVISION_VERSION_TAG} \
         ${VISION_URL} /opt/vision
 
-# Install Pillow-SIMD before TorchVision build and add it to `/tmp/dist`.
-# Pillow will be uninstalled if it is present.
-RUN --mount=type=bind,from=build-pillow,source=/tmp/dist,target=/tmp/dist \
-    python -m pip uninstall -y pillow && \
-    python -m pip install --force-reinstall --no-deps /tmp/dist/*
-
 ARG USE_CUDA
 ARG USE_FFMPEG=1
 ARG USE_PRECOMPILED_HEADERS
@@ -304,7 +161,7 @@ RUN --mount=type=cache,target=/opt/ccache \
     python setup.py bdist_wheel -d /tmp/dist
 
 ########################################################################
-FROM build-base AS fetch-pure
+FROM install-base AS fetch-pure
 
 # Z-Shell related libraries.
 ARG PURE_URL=https://github.com/sindresorhus/pure.git
@@ -316,49 +173,50 @@ RUN git clone --depth 1 ${ZSHA_URL} /opt/zsh/zsh-autosuggestions
 RUN git clone --depth 1 ${ZSHS_URL} /opt/zsh/zsh-syntax-highlighting
 
 ########################################################################
-FROM build-base AS fetch-torch
+FROM install-base AS fetch-torch
 
 # For users who wish to download wheels instead of building them.
-ARG PYTORCH_INDEX_URL=https://download.pytorch.org/whl/cu116
-ARG PYTORCH_VERSION=1.12.1
+ARG PYTORCH_INDEX_URL
+ARG PYTORCH_VERSION
 RUN python -m pip wheel --no-deps --wheel-dir /tmp/dist \
         --index-url ${PYTORCH_INDEX_URL} \
         torch==${PYTORCH_VERSION}
 
 ########################################################################
-FROM build-base AS fetch-vision
+FROM install-base AS fetch-vision
 
-ARG PYTORCH_INDEX_URL=https://download.pytorch.org/whl/cu116
-ARG TORCHVISION_VERSION=0.13.1
+ARG PYTORCH_INDEX_URL
+ARG TORCHVISION_VERSION
 RUN python -m pip wheel --no-deps --wheel-dir /tmp/dist \
         --index-url ${PYTORCH_INDEX_URL} \
         torchvision==${TORCHVISION_VERSION}
 
 ########################################################################
-FROM ${BUILD_IMAGE} AS train-builds-include
-# A convenience stage to gather build artifacts (wheels, etc.) for the train stage.
-# If other source builds are included later on, gather them here as well.
-# All pip wheels are located in `/tmp/dist`.
-# Using an image other than `BUILD_IMAGE` may contaminate
-# `/opt/conda` and other key directories.
+FROM install-base AS fetch-mujoco
 
-# The `train` image is the one actually used for training.
-# It is designed to be separate from the `build` image,
-# with only the build artifacts (e.g., pip wheels) copied over.
+# Install Mujoco
+ARG MUJOCO_URL=https://mujoco.org/download/mujoco210-linux-x86_64.tar.gz
+WORKDIR /tmp/tar/mujoco
+RUN curl ${MUJOCO_URL} --output /tmp/tar/mujoco.tar.gz && \
+    tar -xzf /tmp/tar/mujoco.tar.gz -C /tmp/tar/mujoco && \
+    rm /tmp/tar/mujoco.tar.gz
+
+########################################################################
+FROM ${BUILD_IMAGE} AS train-builds-include
+
 COPY --link --from=install-base /opt/conda /opt/conda
-COPY --link --from=build-pillow /tmp/dist  /tmp/dist
 COPY --link --from=build-vision /tmp/dist  /tmp/dist
-COPY --link --from=fetch-pure   /opt/zsh   /opt
+COPY --link --from=fetch-mujoco /tmp/tar   /tmp/tar
+COPY --link --from=fetch-pure   /opt/zsh   /opt/zsh
 
 ########################################################################
 FROM ${BUILD_IMAGE} AS train-builds-exclude
-# Only build lightweight libraries.
 
 COPY --link --from=install-base /opt/conda /opt/conda
-COPY --link --from=build-pillow /tmp/dist  /tmp/dist
 COPY --link --from=fetch-torch  /tmp/dist  /tmp/dist
 COPY --link --from=fetch-vision /tmp/dist  /tmp/dist
-COPY --link --from=fetch-pure   /opt/zsh   /opt
+COPY --link --from=fetch-mujoco /tmp/tar   /tmp/tar
+COPY --link --from=fetch-pure   /opt/zsh   /opt/zsh
 
 ########################################################################
 FROM train-builds-${BUILD_MODE} AS train-builds
@@ -367,23 +225,10 @@ FROM train-builds-${BUILD_MODE} AS train-builds
 # Using a separate stage allows for build modularity
 # and and parallel installation with system packages.
 
-# Add a mirror `INDEX_URL` for PyPI via `PIP_CONFIG_FILE` if specified.
-ARG INDEX_URL
-ARG TRUSTED_HOST
-ARG PIP_CONFIG_FILE=/opt/conda/pip.conf
-
-RUN if [ ${INDEX_URL} ]; then \
-    {   echo "[global]"; \
-        echo "index-url=${INDEX_URL}"; \
-        echo "trusted-host=${TRUSTED_HOST}"; \
-    } > ${PIP_CONFIG_FILE}; \
-    fi
-
 ARG PATH=/opt/conda/bin:${PATH}
 # Using `PIP_CACHE_DIR` to cache previous installations.
 ARG PIP_CACHE_DIR=/tmp/.cache/pip
-ARG PIP_REQUIREMENTS_FILE
-COPY --link reqs/${PIP_REQUIREMENTS_FILE} /tmp/pip/requirements.txt
+COPY --link reqs/requirements.txt /tmp/pip/requirements.txt
 # The `/tmp/dist/*.whl` files are the wheels built or installed in previous stages.
 # `--find-links` gives higher priority to the wheels in `/tmp/dist`.
 # Installing all packages in one command allows `pip` to resolve dependencies correctly.
@@ -409,14 +254,7 @@ ENV LC_ALL=C.UTF-8
 ENV PYTHONIOENCODING=UTF-8
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
-ARG DEB_OLD
-ARG DEB_NEW
 ARG DEBIAN_FRONTEND=noninteractive
-# Install `software-properties-common`, a requirement for the `add-apt-repository` command.
-RUN if [ ${DEB_NEW} ]; then sed -i "s%${DEB_OLD}%${DEB_NEW}%g" /etc/apt/sources.list; fi && \
-    apt-get update && apt-get install -y --no-install-recommends \
-        software-properties-common && \
-    rm -rf /var/lib/apt/lists/*
 
 # Using `sed` and `xargs` to imitate the behavior of a requirements file.
 # The `--mount=type=bind` temporarily mounts a directory from another stage.
@@ -433,7 +271,7 @@ ARG USR=user
 ARG PASSWD=ubuntu
 # The `zsh` shell is used due to its convenience and popularity.
 # Creating user with password-free sudo permissions. This may cause security issues.
-RUN groupadd -g ${GID} ${GRP} && \
+RUN groupadd -f -g ${GID} ${GRP} && \
     useradd --shell /bin/zsh --create-home -u ${UID} -g ${GRP} \
         -p $(openssl passwd -1 ${PASSWD}) ${USR} && \
     echo "${USR} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
@@ -458,10 +296,15 @@ ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so:$LD_PRELOAD
 ENV LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.2:$LD_PRELOAD
 ENV MALLOC_CONF=background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,muzzy_decay_ms:30000
 
-USER ${USR}
 # Docker must use absolute paths in `COPY` and cannot find `${HOME}`.
 # Setting ${HOME} to its default value explicitly as a fix.
 ARG HOME=/home/${USR}
+
+# Get mujoco.
+COPY --link --from=train-builds --chown=${UID}:${GID} /tmp/tar/mujoco ${HOME}/.mujoco
+RUN echo ${HOME}/.mujoco >> /etc/ld.so.conf.d/mujoco.conf && ldconfig
+
+USER ${USR}
 
 # `PROJECT_ROOT` is where the project code will reside.
 # The conda root path must be placed at the end of the
@@ -477,48 +320,30 @@ RUN conda config --append channels conda-forge && \
     conda config --remove channels defaults && \
     conda config --set channel_priority strict
 
-# Setting the prompt to `pure`, which is available on all terminals without additional settings.
-# This is a personal preference and users may use any prompt that they wish (e.g., oh-my-zsh).
+# Setting the prompt to `pure`.
 ARG PURE_PATH=${HOME}/.zsh/pure
-COPY --link --from=train-builds --chown=${UID}:${GID} /opt/pure ${PURE_PATH}
+COPY --link --from=train-builds --chown=${UID}:${GID} /opt/zsh/pure ${PURE_PATH}
 RUN {   echo "fpath+=${PURE_PATH}"; \
         echo "autoload -Uz promptinit; promptinit"; \
         echo "prompt pure"; \
     } >> ${HOME}/.zshrc
 
-## Add autosuggestions from terminal history. May be somewhat distracting.
-#ARG ZSHA_PATH=${HOME}/.zsh/zsh-autosuggestions
-#COPY --link --from=train-builds --chown=${UID}:${GID} /opt/zsh-autosuggestions ${ZSHA_PATH}
-#RUN echo "source ${ZSHA_PATH}/zsh-autosuggestions.zsh" >> ${HOME}/.zshrc
-
 # Add syntax highlighting. This must be activated after auto-suggestions.
 ARG ZSHS_PATH=${HOME}/.zsh/zsh-syntax-highlighting
 COPY --link --from=train-builds --chown=${UID}:${GID} \
-    /opt/zsh-syntax-highlighting ${ZSHS_PATH}
+    /opt/zsh/zsh-syntax-highlighting ${ZSHS_PATH}
 RUN echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${HOME}/.zshrc
 
-# Enable mouse scrolling for tmux. This also disables copying text from the terminal.
-# RUN echo 'set -g mouse on' >> ${HOME}/.tmux.conf
+# Enable mouse scrolling for tmux.
+RUN echo 'set -g mouse on' >> ${HOME}/.tmux.conf
 
 # `PROJECT_ROOT` belongs to `USR` if created after `USER` has been set.
 # Not so for pre-existing directories, which will still belong to root.
 WORKDIR ${PROJECT_ROOT}
 
 # Project related
-# Install Mujoco
-RUN mkdir -p ${HOME}/.mujoco && \
-    curl https://mujoco.org/download/mujoco210-linux-x86_64.tar.gz --output mujoco.tar.gz && \
-    tar -xzf mujoco.tar.gz -C ${HOME}/.mujoco && \
-    rm mujoco.tar.gz
-
-# Mujoco
 ENV LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libGLEW.so:$LD_PRELOAD
-ENV LD_LIBRARY_PATH /root/.mujoco/mujoco210/bin:${LD_LIBRARY_PATH}
-ENV LD_LIBRARY_PATH /usr/local/nvidia/lib64:${LD_LIBRARY_PATH}
-
 # Kitchen Environment
 ENV PYTHONPATH=$PYTHONPATH:${PROJECT_ROOT}/relay-policy-learning/adept_envs
 # BlockPush
 ENV ASSET_PATH=${PROJECT_ROOT}
-
-CMD ["/bin/zsh"]

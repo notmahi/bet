@@ -11,6 +11,7 @@ experiments.
 It is structures as follows:
 
 ## Table of Contents
+
 TODO: Add a table of contents.
 
 ## Getting Started
@@ -83,8 +84,6 @@ To check if you have each of them run `<command-name> --version` or `<command-na
 cd installation/amd64
 ```
 
-[CUDA] In `Makefile`, change the first line `SERVICE=cpu` to `SERVICE=cuda`.
-
 Run
 
 ```bash
@@ -113,15 +112,16 @@ CUDNN_VERSION=8                    # Only major version specifications are avail
 ```
 
 Build the docker image by running the following.
+Setting `SERVICE=cuda` or `SERVICE=cpu` for your desired option.
 
 ```bash
-make build
+make build SERVICE=<cpu|cuda>
 ````
 
 Then to use the environment, run
 
 ```bash
-make exec
+make exec SERVICE=<cpu|cuda>
 ```
 
 and you'll be inside the container.
@@ -129,7 +129,7 @@ and you'll be inside the container.
 To run multiple instances of the container you can use
 
 ```bash
-make run
+make run SERVICE=<cpu|cuda>
 ```
 
 #### C: MPS (Apple silicon)
@@ -150,6 +150,7 @@ conda activate behavior-transformer
 ```
 
 Set environment variables.
+
 ```bash
 export PYTHONPATH=$PYTHONPATH:$(pwd)/relay-policy-learning/adept_envs
 export ASSET_PATH=$(pwd)
@@ -166,7 +167,7 @@ To use it, either
     WANDB_MODE=online
     WANDB_API_KEY=<your_key>
     ```
-   then `make up`.
+   then `make up SERVICE=<cpu|cuda>`.
 
 2. Or, run
 
@@ -174,14 +175,6 @@ To use it, either
     export WANDB_MODE=online && wandb login
     ```
    in the docker container, or in your custom environment.
-
-### Rendering
-
-Rendering is disabled by default.
-You can pass the `experiment.enable_render=True` flag to the evaluation script to enable it.
-A window with the rendering will open if you're running directly on your machine (e.g. MPS option),
-otherwise you'll need to follow the steps below to make it work on the Docker container.
-
 
 ### Testing
 
@@ -204,6 +197,10 @@ python run_on_env.py env=<env> experiment.num_eval_eps=1 \
 model.load_dir=$(pwd)/train_runs/train_<env>/<date>/<job_id>
 ```
 
+### Recording Videos
+
+You can record videos of rollouts by adding `expriment.record_video=True` in the commandline.
+
 ## Reproducing The Figures
 
 We provide model weights and their rollouts for all the experiments we ran.
@@ -211,12 +208,14 @@ You can use these to reproduce our results.
 The scripts used to generate the models and rollouts and to get our figures can be found in `reproducibility_scripts/`
 
 Obtain the model weights with
+
 ```bash
 wget https://www.dropbox.com/s/6qjxw44r547b79w/train_runs.tar.gz
 tar -xvf train_runs.tar.gz
 ```
 
 TODO: Obtain the rollouts with
+
 ```bash
 wget 
 tar -xvf 

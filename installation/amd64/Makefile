@@ -10,20 +10,17 @@ COMMAND = xvfb-run -a -s "-screen 0 1400x900x24" /bin/zsh
 
 # `PROJECT` is equivalent to `COMPOSE_PROJECT_NAME`.
 # Project names are made unique for each user to prevent name clashes.
-PROJECT = "bet-${SERVICE}-${USR}"
+PROJECT = $(shell echo "bet-${SERVICE}-${USR}" | tr '[:upper:]' '[:lower:]')
 PROJECT_ROOT = /opt/project
 
-# Creates a `.env` file in PWD if it does not exist.
-# This will help prevent UID/GID bugs in `docker-compose.yaml`,
-# which unfortunately cannot use shell outputs in the file.
 # Image names have the usernames appended to them to prevent
 # name collisions between different users.
 ENV_FILE = .env
 GID = $(shell id -g)
 UID = $(shell id -u)
 GRP = $(shell id -gn)
-USR = $(shell id -un | tr '[:upper:]' '[:lower:]')
-IMAGE_NAME = "bet-${USR}"
+USR = $(shell id -un)
+IMAGE_NAME = $(shell echo "bet-${USR}" | tr '[:upper:]' '[:lower:]')
 
 # Makefiles require `$\` at the end of a line for multi-line string values.
 # https://www.gnu.org/software/make/manual/html_node/Splitting-Lines.html
@@ -61,7 +58,7 @@ services:\n  $\
 # For example, different users may use different host volume directories.
 ${OVERRIDE_FILE}:
 	printf ${OVERRIDE_BASE} >> ${OVERRIDE_FILE}
-# Cannot use `override` as a recipe name as it is a `make` keyword.
+
 over: ${OVERRIDE_FILE}
 
 build-debug: check  # Rebuilds the image from the Dockerfile before creating a new container.
