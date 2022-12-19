@@ -1,0 +1,9 @@
+# To train.
+
+python train.py \
+env=kitchen \
+experiment.num_cv_runs=3 \
+model.focal_loss_gamma=0 \
+experiment.save_subdir=reproduction/ablation_focal_loss
+
+# To evaluate.

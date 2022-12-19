@@ -1,19 +1,24 @@
 # Internal Developer Guide
 
-##  Pre-commit
+## Pre-commit
+
 ```bash
 black .
 ```
 
 ## Create model weights archive
+
 ```bash
-tar --exclude="*2022.12*" -czvf train_runs.tar.gz ./train_runs
+tar -czvf train_runs.tar.gz \
+./train_runs/train_kitchen/reproduction \
+./train_runs/train_blockpush/reproduction
 ```
 
 ## Branching Convention
+
 - `original-paper`: tracks the original codebase. Read-only.
-- `main`: the main branch of this repository. 
-  - PR protected. Linear history only.
+- `main`: the main branch of this repository.
+    - PR protected. Linear history only.
 - `<you-name>/<feature-name>`: for new features.
 
 ## Example Workflows

@@ -1,0 +1,10 @@
+# To train.
+
+python train.py \
+env=blockpush \
+experiment.num_cv_runs=3 \
+model.predict_offsets=False \
+experiment.save_subdir=reproduction/ablation_offset
+
+
+# To evaluate.
