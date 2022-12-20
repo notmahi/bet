@@ -1,7 +1,0 @@
-# To train.
-python train.py \
-env=blockpush \
-experiment.num_cv_runs=5 \
-experiment.save_subdir=reproduction/paper_params
-
-# To evaluate.
