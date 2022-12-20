@@ -260,6 +260,7 @@ class Workspace:
             reward, obses, actions, latents, info = self.run_single_episode()
             rewards.append(reward)
             infos.append(info)
+            torch.save(obses, os.path.join(self.work_dir, f"obses_{i}.pth"))
             torch.save(actions, os.path.join(self.work_dir, f"actions_{i}.pth"))
             torch.save(latents, os.path.join(self.work_dir, f"latents_{i}.pth"))
         self.env.close()

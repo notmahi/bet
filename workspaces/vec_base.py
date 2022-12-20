@@ -46,9 +46,16 @@ class VecWorkspace(Workspace):
 
     def run(self):
         all_returns = []
+        all_obs_trajs = []
+        all_action_trajs = []
+        all_done_at = []
+        if self.cfg.experiment.lazy_init_models:
+            self._init_action_ae()
+            self._init_obs_encoding_net()
+            self._init_state_prior()
         for i in range(self.cfg.experiment.num_eval_eps):
             logging.info(f"==== Starting episode {i} ====")
-            obs_traj, actions_traj, returns, done_at = self.run_single_episode()
+            obs_trajs, action_trajs, returns, done_at = self.run_single_episode()
             logs = {
                 "episode": i,
                 "mean_return": np.mean(returns),
@@ -59,6 +66,29 @@ class VecWorkspace(Workspace):
             wandb.log(logs)
             logging.info(logs)
             all_returns.append(returns)
+            all_obs_trajs.append(obs_trajs)
+            all_action_trajs.append(action_trajs)
+            all_done_at.append(done_at)
+        self.envs.close()
+        # Concatenate vectors.
+        all_returns = np.concatenate(all_returns)
+        all_obs_traj = np.concatenate(all_obs_trajs)
+        all_actions_traj = np.concatenate(all_action_trajs)
+        done_at = np.concatenate(all_done_at)
+        # Save trajectories.
+        np.save(
+            os.path.join(self.work_dir, f"obs_trajs.npy"),
+            all_obs_traj
+        )
+        np.save(
+            os.path.join(self.work_dir, f"action_trajs.npy"),
+            all_actions_traj,
+        )
+        np.save(
+            os.path.join(self.work_dir, f"done_at.npy"),
+            done_at,
+        )
+        breakpoint()
         return all_returns, None
 
     def _prepare_obs(self, obs):
@@ -68,18 +98,32 @@ class VecWorkspace(Workspace):
 
     def run_single_episode(self):
         self.history = deque(maxlen=self.window_size)
-        obs = self.envs.reset()
+        obs = self.envs.reset()     # (num_envs, obs_dim)
         done_at = np.zeros(self.cfg.experiment.num_envs)
         returns = np.zeros(self.cfg.experiment.num_envs)
-        obs_traj = [obs]
-        actions_traj = []
+        obs_trajs = []
+        action_trajs = []
+
         for i in range(1, 1 + self.cfg.experiment.num_eval_steps):
-            actions, latents = self._get_action(obs, sample=False, keep_last_bins=False)
-            actions_traj.append(actions)
-            obs, rewards, dones, infos = self.envs.step(actions)
-            obs_traj.append(obs)
+            actions, _ = self._get_action(obs, sample=False, keep_last_bins=False)
+            # action.shape = (num_envs, action_dim)
+            obs_trajs.append(obs)
+            action_trajs.append(actions)
+            next_obs, rewards, dones, infos = self.envs.step(actions)
             # Returns accumulate reward until and evs is done.
             returns += rewards * (done_at == 0)
             # Mark the first step at which the env is done.
             done_at += i * dones * (done_at == 0)
-        return obs_traj, actions_traj, returns, done_at
+            obs = next_obs
+
+        # Save observation and action at final step to be consistent with the non-vectorized env.
+        actions, _ = self._get_action(obs, sample=False, keep_last_bins=False)
+        obs_trajs.append(obs)
+        action_trajs.append(actions)
+        # Concatenate vectors.
+        # obs_traj has shape (num_eval_steps + 1, num_envs, obs_dim)
+        # Should become (num_envs, num_eval_steps + 1, obs_dim)
+        obs_trajs = np.stack(obs_trajs, axis=1)
+        action_trajs = np.stack(action_trajs, axis=1)
+
+        return obs_trajs, action_trajs, returns, done_at
