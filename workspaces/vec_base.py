@@ -88,7 +88,6 @@ class VecWorkspace(Workspace):
             os.path.join(self.work_dir, f"done_at.npy"),
             done_at,
         )
-        breakpoint()
         return all_returns, None
 
     def _prepare_obs(self, obs):
