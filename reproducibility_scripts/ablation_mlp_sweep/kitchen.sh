@@ -13,5 +13,3 @@ python train.py \
   'model.batchnorm=choice(True, False)' \
   hydra.sweeper.n_trials=25 \
   experiment.save_subdir=reproduction/ablation_mlp_sweep
-
-# To evaluate.
