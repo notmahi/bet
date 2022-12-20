@@ -29,6 +29,7 @@ share/
 train_runs
 eval_runs
 train_runs.tar.gz
+weights_and_rollouts.tar.gz
 
 # Data
 bet_data_release.tar.gz

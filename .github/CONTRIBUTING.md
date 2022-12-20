@@ -6,12 +6,14 @@
 black .
 ```
 
-## Create model weights archive
+## Create model weights and rollouts archive
 
 ```bash
-tar -czvf train_runs.tar.gz \
+tar -czvf weights_and_rollouts.tar.gz \
 ./train_runs/train_kitchen/reproduction \
-./train_runs/train_blockpush/reproduction
+./train_runs/train_blockpush/reproduction \
+./eval_runs/eval_kitchen/reproduction \
+./eval_runs/eval_blockpush/reproduction
 ```
 
 ## Branching Convention

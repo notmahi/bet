@@ -211,20 +211,12 @@ We provide model weights and their rollouts for all the experiments we ran.
 You can use these to reproduce our results.
 The scripts used to generate the models and rollouts and to get our figures can be found in `reproducibility_scripts/`
 
-Obtain the model weights with
+Obtain the model weights and rollouts with
 
 ```bash
-wget https://www.dropbox.com/s/eoc40tx7bh1nql9/train_runs.tar.gz
+wget https://www.dropbox.com/s/ghko44hezidthzh/weights_and_rollouts.tar.gz
 tar -xvf train_runs.tar.gz
 ```
-
-TODO: Obtain the rollouts with
-
-```bash
-wget 
-tar -xvf 
-```
-
 ## More Experiments
 
 ## Experiment with Different Configurations
