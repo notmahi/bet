@@ -215,7 +215,7 @@ Obtain the model weights and rollouts with
 
 ```bash
 wget https://www.dropbox.com/s/ghko44hezidthzh/weights_and_rollouts.tar.gz
-tar -xvf train_runs.tar.gz
+tar -xvf weights_and_rollouts.tar.gz
 ```
 ## More Experiments
 
