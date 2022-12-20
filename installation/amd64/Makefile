@@ -6,7 +6,7 @@
 
 # **Change `SERVICE` to specify other services and projects.**
 SERVICE = cuda
-COMMAND = xvfb-run -a -s "-screen 0 1400x900x24" /bin/zsh
+COMMAND = xvfb-run -a /bin/zsh
 
 # `PROJECT` is equivalent to `COMPOSE_PROJECT_NAME`.
 # Project names are made unique for each user to prevent name clashes.

@@ -341,8 +341,9 @@ RUN echo 'set -g mouse on' >> ${HOME}/.tmux.conf
 # Not so for pre-existing directories, which will still belong to root.
 WORKDIR ${PROJECT_ROOT}
 
-# Project related
-ENV LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libGLEW.so:$LD_PRELOAD
+# MuJoCo.
+ENV LD_LIBRARY_PATH /root/.mujoco/mujoco210/bin:${LD_LIBRARY_PATH}
+ENV LD_LIBRARY_PATH /usr/local/nvidia/lib64:${LD_LIBRARY_PATH}
 # Kitchen Environment
 ENV PYTHONPATH=$PYTHONPATH:${PROJECT_ROOT}/relay-policy-learning/adept_envs
 # BlockPush
