@@ -13,4 +13,4 @@ experiment:
   enable_render: False
   vectorized_env: False
   async_envs: False
-  num_envs: 2
+  num_envs: 1
