@@ -5,7 +5,7 @@ experiment:
   # Environment running setup
   num_eval_eps: 100
   action_batch_size: 1
-  num_eval_steps: 700
+  num_eval_steps: 280
   use_state_prior: True
   enable_offsets: True
   action_update_every: 1
