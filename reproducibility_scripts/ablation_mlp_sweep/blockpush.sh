@@ -10,7 +10,6 @@ python train.py \
   'experiment.weight_decay=0.01,0.05,0.1' \
   'model.hidden_dim=72,128,144' \
   'model.hidden_depth=4,6,8' \
+  'model.batchnorm=choice(True, False)' \
   hydra.sweeper.n_trials=25 \
   experiment.save_subdir=reproduction/ablation_mlp_sweep
-
-# To evaluate.
