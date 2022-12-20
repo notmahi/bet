@@ -75,6 +75,12 @@ class VecWorkspace(Workspace):
         all_obs_traj = np.concatenate(all_obs_trajs)
         all_actions_traj = np.concatenate(all_action_trajs)
         done_at = np.concatenate(all_done_at)
+        wandb.log({
+            "overall/mean_return": np.mean(all_returns),
+            "overall/std_return": np.std(all_returns),
+            "overall/avg_episode_length": np.mean(done_at),
+            "overall/std_episode_length": np.std(done_at),
+        })
         # Save trajectories.
         np.save(
             os.path.join(self.work_dir, f"obs_trajs.npy"),
