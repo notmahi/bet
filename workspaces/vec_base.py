@@ -126,9 +126,8 @@ class VecWorkspace(Workspace):
         obs_trajs.append(obs)
         action_trajs.append(actions)
         # Concatenate vectors.
-        # obs_traj has shape (num_eval_steps + 1, num_envs, obs_dim)
-        # Should become (num_envs, num_eval_steps + 1, obs_dim)
         obs_trajs = np.stack(obs_trajs, axis=1)
         action_trajs = np.stack(action_trajs, axis=1)
+        # obs_traj has shape (num_envs, num_eval_steps + 1, obs_dim)
 
         return obs_trajs, action_trajs, returns, done_at
