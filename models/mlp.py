@@ -1,5 +1,8 @@
 import torch.nn as nn
 import torch.nn.functional as F
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def mlp(
@@ -85,6 +88,10 @@ class MLP(nn.Module):
             activation=activation,
         )
         self.apply(weight_init)
+
+        logger.info(
+            "number of parameters: %e", sum(p.numel() for p in self.trunk.parameters())
+        )
 
     def forward(self, x):
         return self.trunk(x)
