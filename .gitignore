@@ -28,6 +28,7 @@ share/
 # Runs
 train_runs
 eval_runs
+compute_metrics_runs
 train_runs.tar.gz
 weights_and_rollouts.tar.gz
 

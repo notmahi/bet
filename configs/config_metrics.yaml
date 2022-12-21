@@ -1,0 +1,13 @@
+load_dir: ???
+tags: ???
+save_subdir: ${now:%Y.%m.%d-%H.%M.%S}
+
+# Wandb
+project: behavior_transformer_repro
+
+# hydra:
+hydra:
+  job:
+    chdir: True   
+  run:
+    dir: ./compute_metrics_runs/${save_subdir}$

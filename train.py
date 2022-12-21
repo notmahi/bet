@@ -8,10 +8,10 @@ import torch.nn.functional as F
 import tqdm
 from torch.utils.data import DataLoader
 
-from hydra_utils import get_only_swept_params
 from models.action_ae.generators.base import GeneratorDataParallel
 from models.latent_generators.latent_generator import LatentGeneratorDataParallel
 from omegaconf import OmegaConf
+from utils.hydra import get_only_swept_params
 
 import utils
 import wandb
