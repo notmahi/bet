@@ -41,7 +41,7 @@ def check_eval_vectorized(eval_config):
     return eval_config["experiment"]["value"]["vectorized_env"]
 
 
-def get_snapshot_metrics(file_name, env_name):
+def get_snapshot_metrics(file_name, env_name, eval_was_vectorized):
 
     # Load the rollout
     rollout = np.load(file_name, allow_pickle=True)
@@ -138,12 +138,13 @@ def main(cfg):
                 # load the observations (has obs in the name)
                 if "obs" in str(file_name):
 
-                    # snapshot_metrics = get_snapshot_metrics(
-                    #     file_name=str(file_name),
-                    #     env_name=env_name,
-                    #     eval_was_vectorized=eval_was_vectorized,
-                    # )
-                    snapshot_metrics = {"test": 1}
+                    snapshot_metrics = get_snapshot_metrics(
+                        file_name=str(file_name),
+                        env_name=env_name,
+                        eval_was_vectorized=eval_was_vectorized,
+                    )
+                    print(eval_was_vectorized)
+                    # snapshot_metrics = {"test": 1}
 
                     # Store computed metrics
                     snapshot_name = snapshot_dir.stem
