@@ -61,6 +61,8 @@ services:
         PYTORCH_VERSION: ${PYTORCH_VERSION:-1.13.0}
         TORCHVISION_VERSION: ${TORCHVISION_VERSION:-0.14.0}
         PYTORCH_INDEX_URL: ${PYTORCH_INDEX_URL:-https://download.pytorch.org/whl/cpu}
+        # DEB_OLD: ${DEB_OLD:-http://archive.ubuntu.com}
+        # DEB_NEW: ${DEB_NEW:-http://mirror.kakao.com}
         PROJECT_ROOT: ${PROJECT_ROOT:-/opt/project}
         GID: ${GID:-1000}
         UID: ${UID:-1000}

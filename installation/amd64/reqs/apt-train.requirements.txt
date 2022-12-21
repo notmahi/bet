@@ -1,6 +1,7 @@
 # Example `apt` requirements file for Ubuntu 20.04 LTS.
 
 # Essential packages.
+ffmpeg
 libjemalloc2
 libjpeg-turbo8
 libpng16-16
@@ -20,6 +21,7 @@ rsync
 tmux
 curl
 gedit
+wget
 
 # Needed for Mujoco. Taken from https://github.com/openai/mujoco-py/blob/master/Dockerfile
 libgl1-mesa-dev

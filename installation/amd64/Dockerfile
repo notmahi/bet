@@ -260,7 +260,18 @@ ARG DEBIAN_FRONTEND=noninteractive
 # The `--mount=type=bind` temporarily mounts a directory from another stage.
 # See the `deploy` stage below to see how to add other apt reporitories.
 COPY --link reqs/apt-train.requirements.txt /tmp/apt/requirements.txt
-RUN apt-get update && sed 's/#.*//g; s/\r//g' /tmp/apt/requirements.txt | \
+
+# Using caching to speed up apt installation.
+ARG DEB_OLD
+ARG DEB_NEW
+RUN rm -f /etc/apt/apt.conf.d/docker-clean; \
+    echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > \
+    /etc/apt/apt.conf.d/keep-cache
+
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    if [ ${DEB_NEW} ]; then sed -i "s%${DEB_OLD}%${DEB_NEW}%g" /etc/apt/sources.list; fi && \
+    apt-get update && sed 's/#.*//g; s/\r//g' /tmp/apt/requirements.txt | \
     xargs apt-get install -y --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
 
