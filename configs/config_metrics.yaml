@@ -10,4 +10,4 @@ hydra:
   job:
     chdir: True   
   run:
-    dir: ./compute_metrics_runs/${save_subdir}$
+    dir: ./compute_metrics_runs/${save_subdir}

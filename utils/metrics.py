@@ -35,14 +35,17 @@ def block_target_distance(block, target, rollout_i, step_i, data):
     )
 
 
-def compute_blockpush_metrics(data, tolerance=0.05):
+def compute_blockpush_metrics(
+    data, eval_was_vectorized=False, done_at_array=None, tolerance=0.05
+):
     """Compute the metrics for the blockpush task as described in the paper
     Args:
         data: dictionary containing the observations
         tolerance: tolerance for the push metric, threshold for the reach metric is 1e-3 by default,
         check original repo for more details: https://github.com/notmahi/bet.
     Returns:
-        metrics: dictionary containing the metrics for both tables.
+        Tuple containing the probabilities of the achieving the different goals,
+        their absolute counts and the list of rewards for each rollout.
     """
 
     # Table 1 variables initialization
@@ -92,8 +95,10 @@ def compute_blockpush_metrics(data, tolerance=0.05):
     red_pushed = 0
     green_pushed = 0
 
+    # Reward variables
+    reward_list = [0] * len(data)
+
     # Coordinates of the blocks, targets and arm at each step, recorded during evaluation.
-    print(data)
     obs = collections.OrderedDict(
         block1_translation=data[:, :, 0:2],
         block1_orientation=data[:, :, 2],
@@ -131,9 +136,6 @@ def compute_blockpush_metrics(data, tolerance=0.05):
 
         # For each step in a rollout
         for step_i, step_vector in enumerate(data[rollout_i, :, :]):
-            # If both goals have been achieved, break the loop
-            # if P1_achieved and P2_achieved:
-            #    break
             # If the rollout is finished, break the loop
             if step_i == len(data[rollout_i, :, :]) - 1:
                 break
@@ -161,7 +163,7 @@ def compute_blockpush_metrics(data, tolerance=0.05):
                 # Table 2
                 first_reached_red += 1
 
-            # The same for the second block (R1 isupdated regarding of which of the blocks has been moved first)
+            # The same for the second block (R1 is updated regarding of which of the blocks has been moved first)
             elif not R1_achieved and np.abs(distanceb2b2_now - distaceb2b2_old) > 1e-3:
                 # Table 1
                 R1 += 1
@@ -246,6 +248,8 @@ def compute_blockpush_metrics(data, tolerance=0.05):
                 # Table 2
                 red_pushed += 1
                 red_block_red_target += 1
+                # Reward
+                reward_list[rollout_i] = 0.49
             # Same if block one is pushed to target two
             elif not P1_achieved and distanceb1t2 < tolerance:
                 # Table 1
@@ -255,6 +259,8 @@ def compute_blockpush_metrics(data, tolerance=0.05):
                 # Table 2
                 red_pushed += 1
                 red_block_green_target += 1
+                # Reward
+                reward_list[rollout_i] = 0.49
             # Same if block two is pushed to target one
             elif not P1_achieved and distanceb2t1 < tolerance:
                 # Table 1
@@ -264,6 +270,8 @@ def compute_blockpush_metrics(data, tolerance=0.05):
                 # Table 2
                 green_pushed += 1
                 green_block_red_target += 1
+                # Reward
+                reward_list[rollout_i] = 0.49
             # Same if block two is pushed to target two
             elif not P1_achieved and distanceb2t2 < tolerance:
                 # Table 1
@@ -273,6 +281,8 @@ def compute_blockpush_metrics(data, tolerance=0.05):
                 # Table 2
                 green_pushed += 1
                 green_block_green_target += 1
+                # Reward
+                reward_list[rollout_i] = 0.49
 
             # If at least one of the blocks has been pushed to the target, check if the other one has been pushed to the target
             if P1_achieved and not P2_achieved:
@@ -290,7 +300,9 @@ def compute_blockpush_metrics(data, tolerance=0.05):
                     # Table 2
                     green_block_green_target += 1
                     green_pushed += 1
-                    # break
+                    # Reward
+                    reward_list[rollout_i] = 1.0
+
                 # Same if block one has been pushed to target two, check if block two has been pushed to target one
                 elif (
                     b1t2
@@ -305,7 +317,9 @@ def compute_blockpush_metrics(data, tolerance=0.05):
                     # Table 2
                     green_block_red_target += 1
                     green_pushed += 1
-                    # break
+                    # Reward
+                    reward_list[rollout_i] = 1.0
+
                 # Same if block two has been pushed to target one, check if block one has been pushed to target two
                 elif (
                     b2t1
@@ -320,7 +334,8 @@ def compute_blockpush_metrics(data, tolerance=0.05):
                     # Table 2
                     red_block_green_target += 1
                     red_pushed += 1
-                    # break
+                    # Reward
+                    reward_list[rollout_i] = 1.0
                 # Same if block two has been pushed to target two, check if block one has been pushed to target one
                 elif (
                     b2t2
@@ -335,27 +350,26 @@ def compute_blockpush_metrics(data, tolerance=0.05):
                     # Table 2
                     red_block_red_target += 1
                     red_pushed += 1
-                    # break
+                    # Reward
+                    reward_list[rollout_i] = 1.0
 
-            """
             # 2. Push (block is in the target at the final step)
 
             # Get the next step vector and check if the current step is the last one
-            step_vector_next = data[rollout_i, step_i+1, :]
-            if np.sum(step_vector_next) == 0 or step_i == len(data[rollout_i]) - 2:
+            step_vector_next = data[rollout_i, step_i + 1, :]
+            if (
+                (np.sum(step_vector_next) == 0)
+                or (step_i == len(data[rollout_i]) - 2)
+                or (eval_was_vectorized and done_at_array[rollout_i - 1] == step_i)
+            ):
                 # Store the distances in a list
                 distances = [distanceb1t1, distanceb1t2, distanceb2t1, distanceb2t2]
-                print(len([x for x in distances if x < tolerance]))
                 # If only one distance is less than the tolerance, update P1_2
                 if len([x for x in distances if x < tolerance]) >= 1:
-                    P1_2+=1
+                    P1_2 += 1
                 # If two distances are less than the tolerance, update P2_2
                 if len([x for x in distances if x < tolerance]) == 2:
-                    P2_2+=1
-                else:
-                    print('Error in the computation of P2_2')
-                break
-            """
+                    P2_2 += 1
 
         # Compute the probabilities
         if rollout_i == len(data) - 1:
@@ -374,45 +388,45 @@ def compute_blockpush_metrics(data, tolerance=0.05):
             Pgreen_block_red_target = green_block_red_target / len(data)
             Pgreen_block_green_target = green_block_green_target / len(data)
 
-            # Store a dictionary with the probabilities
+            # Store a dictionary with the probabilities and absolute counts
             probability_metrics = {
-                "R1 (block-block distance)": PR1,
-                "R2 (block-block distance)": PR2,
-                "R1 (block-arm distance)": PR1_2,
-                "R2 (block-arm distance)": PR2_2,
-                "P1 (block enters the target)": PP1,
-                "P2 (block enters the target) ": PP2,
-                "P1 (block stays in target)": PP1_2,
-                "P2 (block stays in target)": PP2_2,
-                "First block reached Red": Pfirst_reached_red,
-                "First block reached Green": Pfirst_reached_green,
-                "Red block reached Red target": Pred_block_red_target,
-                "Red block reached Green target": Pred_block_green_target,
-                "Green block reached Red target": Pgreen_block_red_target,
-                "Green block reached Green target": Pgreen_block_green_target,
+                "Probabilities/R1 (block-block distance)": PR1,
+                "Probabilities/R2 (block-block distance)": PR2,
+                "Probabilities/R1 (block-arm distance)": PR1_2,
+                "Probabilities/R2 (block-arm distance)": PR2_2,
+                "Probabilities/P1 (block enters the target)": PP1,
+                "Probabilities/P2 (block enters the target) ": PP2,
+                "Probabilities/P1 (block stays in target)": PP1_2,
+                "Probabilities/P2 (block stays in target)": PP2_2,
+                "Probabilities/First block reached Red": Pfirst_reached_red,
+                "Probabilities/First block reached Green": Pfirst_reached_green,
+                "Probabilities/Red block reached Red target": Pred_block_red_target,
+                "Probabilities/Red block reached Green target": Pred_block_green_target,
+                "Probabilities/Green block reached Red target": Pgreen_block_red_target,
+                "Probabilities/Green block reached Green target": Pgreen_block_green_target,
             }
 
             # Store a dictionary with the absolute counts
             absolute_metrics = {
-                "R1 (block-block distance)": R1,
-                "R2 (block-block distance)": R2,
-                "R1 (block-arm distance)": R1_2,
-                "R2 (block-arm distance)": R2_2,
-                "P1 (block enters the target)": P1,
-                "P2 (block enters the target)": P2,
-                "P1 (block stays in target)": P1_2,
-                "P2 (block stays in target)": P2_2,
-                "First block reached Red": first_reached_red,
-                "First block reached Green": first_reached_green,
-                "Red block reached Red target": red_block_red_target,
-                "Red block reached Green target": red_block_green_target,
-                "Green block reached Red target": green_block_red_target,
-                "Green block reached Green target": green_block_green_target,
-                "Red block pushed": red_pushed,
-                "Green block pushed": green_pushed,
+                "Absolute/R1 (block-block distance)": R1,
+                "Absolute/R2 (block-block distance)": R2,
+                "Absolute/R1 (block-arm distance)": R1_2,
+                "Absolute/R2 (block-arm distance)": R2_2,
+                "Absolute/P1 (block enters the target)": P1,
+                "Absolute/P2 (block enters the target)": P2,
+                "Absolute/P1 (block stays in target)": P1_2,
+                "Absolute/P2 (block stays in target)": P2_2,
+                "Absolute/First block reached Red": first_reached_red,
+                "Absolute/First block reached Green": first_reached_green,
+                "Absolute/Red block reached Red target": red_block_red_target,
+                "Absolute/Red block reached Green target": red_block_green_target,
+                "Absolute/Green block reached Red target": green_block_red_target,
+                "Absolute/Green block reached Green target": green_block_green_target,
+                "Absolute/Red block pushed": red_pushed,
+                "Absolute/Green block pushed": green_pushed,
             }
 
-            return probability_metrics, absolute_metrics
+            return probability_metrics, absolute_metrics, reward_list
 
 
 # KITCHEN COMPUTE METRICS
@@ -535,7 +549,7 @@ def compute_kitchen_metrics(rollout_elements):
     Args:
         rollout_elements (list): List of lists containing the tasks completed for each rollout chronologically.
     Returns:
-            Metrics for each of the tasks,"""
+        Rewards for each rollout and overall metrics for each of the tasks."""
 
     task_completed_1 = 0
     task_completed_2 = 0
@@ -545,7 +559,13 @@ def compute_kitchen_metrics(rollout_elements):
     task_completed_6 = 0
     task_completed_7 = 0
 
-    for rollout in rollout_elements:
+    # Reward
+    reward_list = [0] * len(rollout_elements)
+
+    for rollout_idx, rollout in enumerate(rollout_elements):
+        # Reward
+        reward_list[rollout_idx] = len(rollout)
+        # Metrics
         if len(rollout) >= 1:
             task_completed_1 += 1
         if len(rollout) >= 2:
@@ -569,7 +589,15 @@ def compute_kitchen_metrics(rollout_elements):
     P6 = task_completed_6 / len(rollout_elements)
     P7 = task_completed_7 / len(rollout_elements)
 
-    return {"P1": P1, "P2": P2, "P3": P3, "P4": P4, "P5": P5, "P6": P6, "P7": P7}
+    return {
+        "P1": P1,
+        "P2": P2,
+        "P3": P3,
+        "P4": P4,
+        "P5": P5,
+        "P6": P6,
+        "P7": P7,
+    }, reward_list
 
 
 def compute_task_entropy(task_mappings):
