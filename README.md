@@ -1,9 +1,10 @@
 # Behavior Transformers: Cloning k modes with one stone
 
-[[Arxiv]](https://arxiv.org/abs/2206.11251) [[Code]](https://github.com/notmahi/bet) [[Data]](https://osf.io/983qz/) [[Project page and videos]](https://mahis.life/bet/)
+[[Arxiv]](https://arxiv.org/abs/2206.11251) [[Code]](https://github.com/notmahi/bet) [[miniBET]](https://github.com/notmahi/miniBET) [[Data]](https://osf.io/983qz/) [[Project page and videos]](https://mahis.life/bet/)
 
 Created by [Nur Muhammad (Mahi) Shafiullah](https://mahis.life), [Zichen Jeff Cui](https://jeffcui.com/), [Ariuntuya (Arty) Altanzaya](https://www.artys.page/), and [Lerrel Pinto](https://www.lerrelpinto.com/) at New York University.
 
+Update: Also look into [the miniBeT github repo](https://github.com/notmahi/miniBET) if you are trying to use (Conditional) Behavior Transformers in your own project.
 
 
 https://user-images.githubusercontent.com/3000253/174540589-35c2d51b-3a5b-42d8-9f80-483b61df91a7.mp4
